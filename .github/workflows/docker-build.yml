@@ -1,0 +1,85 @@
+name: Docker Build & Push
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - name: hotel-reservation-gateway
+            context: ms-gateway
+            description: API Gateway routing requests to microservices with rate limiting via Redis.
+          - name: hotel-reservation-auth
+            context: ms-auth
+            description: Auth service handling user registration, authentication and JWT tokens.
+          - name: hotel-reservation-catalog
+            context: ms-catalog
+            description: Catalog service managing hotel and room listings.
+          - name: hotel-reservation-booking
+            context: ms-booking
+            description: Booking service handling reservations and booking lifecycle.
+          - name: hotel-reservation-availability
+            context: ms-availability
+            description: Availability service managing room availability in real time.
+          - name: hotel-reservation-notification
+            context: ms-notification
+            description: Notification service sending alerts and updates to users.
+          - name: hotel-reservation-agent
+            context: ms-agent
+            description: Agent service handling AI or automated assistant features.
+      max-parallel: 1
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get version from pom.xml
+        id: vars
+        working-directory: ${{ matrix.service.context }}
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout 2>/dev/null)
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: Could not extract version from pom.xml"
+            exit 1
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
+      - name: Build & push ${{ matrix.service.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.context }}/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service.name }}:${{ steps.vars.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            BUILD_DATE=${{ github.event.head_commit.timestamp }}
+            BUILD_VERSION=${{ steps.vars.outputs.version }}
+            IMAGE_DESCRIPTION=${{ matrix.service.description }}
