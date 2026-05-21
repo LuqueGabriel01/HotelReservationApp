@@ -1,0 +1,46 @@
+name: Microservices Code Quality
+
+on:
+  pull_request:
+
+jobs:
+
+  code-quality:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: true
+      matrix:
+        service:
+          - ms-auth
+          - ms-availability
+          - ms-booking
+          - ms-gateway
+          - ms-agent
+          - ms-notifications
+          - ms-catalog
+      max-parallel: 1
+
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: maven
+
+      - name: Spotless — check format
+        run: mvn spotless:check
+
+      - name: Checkstyle — check style
+        run: mvn checkstyle:check
+
+      - name: PMD — check for code issues
+        run: mvn pmd:check

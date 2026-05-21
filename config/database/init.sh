@@ -1,0 +1,17 @@
+#!/bin/bash
+set -e
+
+echo "Creating databases..."
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
+  CREATE DATABASE "$AUTH_DATABASE_NAME";
+  CREATE DATABASE "$CATALOG_DATABASE_NAME";
+  CREATE DATABASE "$BOOKING_DATABASE_NAME";
+  CREATE DATABASE "$AVAILABILITY_DATABASE_NAME";
+EOSQL
+
+echo "Databases created successfully:"
+echo "  - $AUTH_DATABASE_NAME"
+echo "  - $CATALOG_DATABASE_NAME"
+echo "  - $BOOKING_DATABASE_NAME"
+echo "  - $AVAILABILITY_DATABASE_NAME"

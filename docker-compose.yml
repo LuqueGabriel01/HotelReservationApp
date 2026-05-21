@@ -1,0 +1,149 @@
+name: hotel-reservation-app
+
+services:
+  postgres-datasource:
+    image: postgres:18.3
+    environment:
+      POSTGRES_USER: ${DATASOURCE_USERNAME}
+      POSTGRES_PASSWORD: ${DATASOURCE_PASSWORD}
+      AUTH_DATABASE_NAME: ${AUTH_DATABASE_NAME}
+      CATALOG_DATABASE_NAME: ${CATALOG_DATABASE_NAME}
+      BOOKING_DATABASE_NAME: ${BOOKING_DATABASE_NAME}
+      AVAILABILITY_DATABASE_NAME: ${AVAILABILITY_DATABASE_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./hotel-reservation-data:/var/lib/postgresql
+      - ./config/database/init.sh:/docker-entrypoint-initdb.d/init.sh
+    restart: always
+    networks:
+      - hotel-reservation-network
+
+  redis:
+    image: redis:8.6.2-alpine
+    ports:
+      - "6379:6379"
+    restart: always
+    networks:
+      - hotel-reservation-network
+
+  ms-gateway:
+    build:
+      context: ./ms-gateway
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+    restart: on-failure
+    networks:
+      - hotel-reservation-network
+
+  ms-auth:
+    build:
+      context: ./ms-auth
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    depends_on:
+      - postgres-datasource
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      AUTH_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${AUTH_DATABASE_NAME}
+      DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
+      DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
+      JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
+      UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+    restart: on-failure
+    networks:
+      - hotel-reservation-network
+
+  ms-catalog:
+    build:
+      context: ./ms-catalog
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    depends_on:
+      - postgres-datasource
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      CATALOG_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${CATALOG_DATABASE_NAME}
+      DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
+      DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
+      JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
+      UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+    restart: on-failure
+    networks:
+      - hotel-reservation-network
+
+  ms-booking:
+    build:
+      context: ./ms-booking
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    depends_on:
+      - postgres-datasource
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      BOOKING_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${BOOKING_DATABASE_NAME}
+      DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
+      DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
+      JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
+      UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+    restart: on-failure
+    networks:
+      - hotel-reservation-network
+
+  ms-availability:
+    build:
+      context: ./ms-availability
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    depends_on:
+      - postgres-datasource
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      AVAILABILITY_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${AVAILABILITY_DATABASE_NAME}
+      DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
+      DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
+      JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
+      UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+    restart: on-failure
+    networks:
+      - hotel-reservation-network
+
+  ms-notification:
+    build:
+      context: ./ms-notification
+      dockerfile: Dockerfile
+    ports:
+      - "8085:8085"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+    restart: on-failure
+    networks:
+      - hotel-reservation-network
+
+  ms-agent:
+    build:
+      context: ./ms-agent
+      dockerfile: Dockerfile
+    ports:
+      - "8086:8086"
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+      UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+    restart: on-failure
+    networks:
+      - hotel-reservation-network
+
+networks:
+  hotel-reservation-network:
+    driver: bridge
