@@ -9,25 +9,26 @@ The `ms-auth` service manages user registration and authentication. It is respon
 
 ---
 
-## Data Model
+## Database — `auth_db`
 
-### Entity: `User`
+### Table: `users`
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | UUID | Unique identifier |
-| `username` | String | Username (unique, no spaces) |
-| `email` | String | Email address (unique) |
-| `password` | String | Bcrypt hash of the password |
-| `role` | Enum | User role (`USER`, `ADMIN`) |
-| `createdAt` | Instant | Registration timestamp |
-| `updatedAt` | Instant | Last update timestamp |
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Unique identifier |
+| `name` | VARCHAR | NOT NULL | Full name of the user |
+| `email` | VARCHAR | UNIQUE, NOT NULL | Email address |
+| `password` | VARCHAR | NOT NULL | BCrypt hash of the password |
+| `role` | ENUM | NOT NULL | User role |
+| `created_at` | TIMESTAMP | NOT NULL | Registration timestamp |
 
 ### Enums
 
 ```
-UserRole: USER, ADMIN
+UserRole: CLIENTE, ADMIN
 ```
+
+> This is the only table in `auth_db`. No foreign keys — it is a fully independent database.
 
 ---
 
