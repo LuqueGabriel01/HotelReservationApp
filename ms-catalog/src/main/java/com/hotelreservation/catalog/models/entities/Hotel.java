@@ -1,0 +1,56 @@
+package com.hotelreservation.catalog.models.entities;
+
+import com.hotelreservation.catalog.models.entities.base.AuditableEntity;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Size;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+@Entity
+@Table(name = "hotels")
+@Getter
+@NoArgsConstructor
+public class Hotel extends AuditableEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(length = 150)
+    @Size(max = 150)
+    private String description;
+
+    @Column(nullable = false)
+    private String address;
+
+    @Column(nullable = false)
+    private String city;
+
+    @Column(nullable = false)
+    @Min(1)
+    @Max(5)
+    private int stars;
+
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<Room> rooms = new ArrayList<>();
+
+    @OneToMany(mappedBy = "hotel", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ImageHotel> imagesHotel = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "hotel_amenities",
+            joinColumns = @JoinColumn(name = "hotel_id"),
+            inverseJoinColumns = @JoinColumn(name = "amenity_id")
+    )
+    private List<Amenity> amenities = new ArrayList<>();
+}
