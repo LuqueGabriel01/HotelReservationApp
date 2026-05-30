@@ -1,6 +1,6 @@
-package com.hotelreservation.availability.auth.models.entities;
+package com.hotelreservation.auth.models.entities;
 
-import com.hotelreservation.availability.auth.enums.Role;
+import com.hotelreservation.auth.enums.Role;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
