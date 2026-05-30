@@ -10,6 +10,22 @@ import lombok.NoArgsConstructor;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Represents a user entity within the system mapped to the "users" database table.
+ * <p>
+ * This class uses Lombok annotations to automatically generate boilerplate code such as
+ * getters, builders, and constructors. It also includes JPA lifecycle callbacks to handle
+ * auditing timestamps automatically.
+ * </p>
+ *
+ * <h3>Database Constraints:</h3>
+ * <ul>
+ * <li>The {@code email} field must be unique (constraint name: {@code uk_user_email}).</li>
+ * <li>The {@code username} field must be unique (constraint name: {@code uk_user_username}).</li>
+ * </ul>
+ *
+ * @author Gabriel Luque
+ */
 @Entity
 @Getter
 @Builder

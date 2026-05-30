@@ -1,6 +1,6 @@
-package com.hotelreservation.availability.auth.enums;
+package com.hotelreservation.auth.enums;
 
-import com.hotelreservation.availability.auth.models.entities.User;
+import com.hotelreservation.auth.models.entities.User;
 
 /**
  * Represents the security and access roles available within the system.
