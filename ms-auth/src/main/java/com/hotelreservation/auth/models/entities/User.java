@@ -21,7 +21,6 @@ import java.util.UUID;
  * <h3>Database Constraints:</h3>
  * <ul>
  * <li>The {@code email} field must be unique (constraint name: {@code uk_user_email}).</li>
- * <li>The {@code username} field must be unique (constraint name: {@code uk_user_username}).</li>
  * </ul>
  *
  * @author Gabriel Luque
@@ -35,7 +34,6 @@ import java.util.UUID;
         name = "users",
         uniqueConstraints = {
             @UniqueConstraint(name = "uk_user_email", columnNames = "email"),
-            @UniqueConstraint(name = "uk_user_username", columnNames = "username")
         }
 )
 public class User {
