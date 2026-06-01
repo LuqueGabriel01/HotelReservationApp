@@ -13,7 +13,14 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "hotels")
+@Table(
+        name = "hotels",
+        indexes = {
+                @Index(
+                        name = "idx_hotel_city_stars",
+                        columnList = "city, stars"
+                )
+        })
 @Getter
 @NoArgsConstructor
 public class Hotel extends AuditableEntity {

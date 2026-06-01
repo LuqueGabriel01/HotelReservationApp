@@ -11,7 +11,14 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 @Entity
-@Table(name = "rooms")
+@Table(
+        name = "rooms",
+        indexes = {
+                @Index(
+                        name = "idx_room_type_capacity",
+                        columnList = "type, capacity"
+                )
+        })
 @Getter
 @NoArgsConstructor
 public class Room extends AuditableEntity {
