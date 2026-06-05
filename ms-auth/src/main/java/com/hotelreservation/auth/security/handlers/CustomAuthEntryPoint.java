@@ -2,7 +2,6 @@ package com.hotelreservation.auth.security.handlers;
 
 import com.hotelreservation.auth.constants.ErrorConstants;
 import com.hotelreservation.auth.security.writer.ErrorWriter;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +22,7 @@ public class CustomAuthEntryPoint implements AuthenticationEntryPoint {
 
     /** Intercepts authentication failures and writes a standardized unauthorized error response. */
     @Override
-    public void commence(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull AuthenticationException authException) throws IOException, ServletException {
+    public void commence(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull AuthenticationException authException) throws IOException {
         writer.write(response, HttpStatus.UNAUTHORIZED, ErrorConstants.Message.ACCESS_DENIED);
     }
 }
