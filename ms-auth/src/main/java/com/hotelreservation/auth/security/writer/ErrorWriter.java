@@ -1,6 +1,5 @@
 package com.hotelreservation.auth.security.writer;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hotelreservation.auth.models.dtos.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
