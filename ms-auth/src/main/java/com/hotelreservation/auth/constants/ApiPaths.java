@@ -7,24 +7,24 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ApiPaths {
 
-    /** Authentication endpoints */
-    public static final class Auth {
-        public static final String BASE_URL = "/api/auth";
-        public static final String LOGIN = "/api/auth/login";
-        public static final String REGISTER = "/api/auth/register";
-        public static final String REFRESH = "/api/auth/refresh";
-        public static final String LOGOUT = "/api/auth/logout";
-        public static final String ME = "/api/auth/me";
-    }
+  /** Authentication endpoints. */
+  public static final class Auth {
+    public static final String BASE_URL = "/api/auth";
+    public static final String LOGIN = "/api/auth/login";
+    public static final String REGISTER = "/api/auth/register";
+    public static final String REFRESH = "/api/auth/refresh";
+    public static final String LOGOUT = "/api/auth/logout";
+    public static final String ME = "/api/auth/me";
+  }
 
-    /** API documentation endpoints. */
-    public static final class Docs {
-        public static final String SWAGGER_UI = "/swagger-ui/**";
-        public static final String API_DOCS = "/v3/api-docs/**";
-    }
+  /** API documentation endpoints. */
+  public static final class Docs {
+    public static final String SWAGGER_UI = "/swagger-ui/**";
+    public static final String API_DOCS = "/v3/api-docs/**";
+  }
 
-    /** Actuator endpoints for monitoring and health checks. */
-    public static final class Actuator {
-        public static final String HEALTH = "/actuator/health";
-    }
+  /** Actuator endpoints for monitoring and health checks. */
+  public static final class Actuator {
+    public static final String HEALTH = "/actuator/health";
+  }
 }

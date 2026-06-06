@@ -10,8 +10,8 @@ import org.mapstruct.Mapping;
 /** Mapper interface to convert User entities into authentication DTO responses. */
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    @Mapping(target = "tokens", source = "tokens")
-    RegisterResponse toRegisterResponse(User user, TokenResponse tokens);
+  @Mapping(target = "tokens", source = "tokens")
+  RegisterResponse toRegisterResponse(User user, TokenResponse tokens);
 
-    UserResponse toUserResponse(User user);
+  UserResponse toUserResponse(User user);
 }
