@@ -15,6 +15,6 @@ public final class ErrorConstants {
     public static final String INVALID_CREDENTIALS = "invalid credentials";
     public static final String MISSING_INVALID_TOKEN = "Missing or invalid authorization token";
     public static final String INVALID_REFRESH_TOKEN = "Refresh token is expired or invalid";
-    public static final String ACCESS_DENIED = "Access denied — insufficient permissions.";
+    public static final String ACCESS_DENIED = "Access denied, insufficient permissions.";
   }
 }
