@@ -14,4 +14,4 @@ import jakarta.validation.constraints.NotBlank;
  * @param password The user's account password.
  */
 public record LoginRequest(
-    @NotBlank @Email String email, @NotBlank @ValidPassword String password) {}
+    @NotBlank @Email String email, @NotBlank String password) {}
