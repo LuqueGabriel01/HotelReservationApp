@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Utility component used to write standardized JSON error responses directly to the HTTP output
@@ -20,7 +20,7 @@ import tools.jackson.databind.json.JsonMapper;
 @RequiredArgsConstructor
 public class ErrorWriter {
 
-  private final JsonMapper objectMapper;
+  private final ObjectMapper objectMapper;
 
   /**
    * Writes an error response to the HTTP response stream.
