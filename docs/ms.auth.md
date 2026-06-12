@@ -13,15 +13,29 @@ The `ms-auth` service manages user registration and authentication. It is respon
 
 ### Table: `users`
 
-| Column       | Type | Constraints | Description                 |
-|--------------|---|---|-----------------------------|
-| `id`         | UUID | PK | Unique identifier           |
-| `name`       | VARCHAR | NOT NULL | Full name of the user       |
-| `email`      | VARCHAR | UNIQUE, NOT NULL | Email address               |
-| `password`   | VARCHAR | NOT NULL | BCrypt hash of the password |
-| `role`       | ENUM | NOT NULL | User role                   |
+| Column       | Type      | Constraints | Description                 |
+|--------------|-----------|---|-----------------------------|
+| `id`         | UUID      | PK | Unique identifier           |
+| `name`       | VARCHAR   | NOT NULL | Full name of the user       |
+| `email`      | VARCHAR   | UNIQUE, NOT NULL | Email address               |
+| `password`   | VARCHAR   | NOT NULL | BCrypt hash of the password |
+| `enabled`    | BOOLEAN   | NOT NULL | Account status (Default: true)       |
+| `role`       | ENUM      | NOT NULL | User role                   |
 | `created_at` | TIMESTAMP | NOT NULL | Registration timestamp      |
 | `updated_at` | TIMESTAMP | NOT NULL | Update timestamp            |
+
+### Table: `tokens`
+
+| Column       | Type   | Constraints            | Description                 |
+|--------------|--------|------------------------|-----------------------------|
+| `id`         | UUID   | PK                     | Unique identifier (Auto-generated)           |
+| `token`      | TEXT   | NOT NULL               | Authentication token string      |
+| `token_type` | ENUM   | UNIQUE, NOT NULL       | Type of token (Default: 'BEARER')              |
+| `revoked`    | BOOLEAN | NOT NULL               | Indicates if the token was revoked |
+| `expired`    | BOOLEAN   | NOT NULL               | Indicates if the token has expired                |
+| `created_at` | TIMESTAMP | NOT NULL               | Generation timestamp (Auto)    |
+| `closed_at`  | TIMESTAMP | NOT NULL               | Session closure timestamp         |
+| `user_id`    | UUID | FK(users.id), NOT NULL | Reference to the user owner           |
 
 ### Enums
 
