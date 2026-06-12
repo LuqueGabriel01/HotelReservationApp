@@ -8,6 +8,9 @@ import org.hibernate.validator.constraints.URL;
 
 import java.util.UUID;
 
+/**
+ * Entity representing an image associated with a hotel.
+ */
 @Entity
 @Table(name = "images_hotel")
 @Getter

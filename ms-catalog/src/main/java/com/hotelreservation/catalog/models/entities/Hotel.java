@@ -12,6 +12,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Entity representing a hotel in the system.
+ */
 @Entity
 @Table(
         name = "hotels",
