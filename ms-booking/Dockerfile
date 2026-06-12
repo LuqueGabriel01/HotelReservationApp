@@ -20,7 +20,7 @@ FROM eclipse-temurin:21-jre AS runtime
 ARG BUILD_DATE=unknown
 ARG BUILD_VERSION=unknown
 ARG IMAGE_DESCRIPTION=unknown
-ARG IMAGE_NAME="Sports Pulse - MS Booking"
+ARG IMAGE_NAME="Hotel App - MS Booking"
 ARG UID=1010
 ARG GID=1010
 
