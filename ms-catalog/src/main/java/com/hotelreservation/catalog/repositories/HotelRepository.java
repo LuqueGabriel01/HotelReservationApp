@@ -2,6 +2,7 @@ package com.hotelreservation.catalog.repositories;
 
 import com.hotelreservation.catalog.models.entities.Hotel;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -11,12 +12,13 @@ import java.util.UUID;
  * JPA repository for {@link Hotel} persistence operations
  */
 @Repository
-public interface HotelRepository extends JpaRepository<Hotel, UUID> {
+public interface HotelRepository extends JpaRepository<Hotel, UUID>, JpaSpecificationExecutor<Hotel> {
 
     /**
-     * Finds a hotel by their name.
-     * @param name The name to search. Cannot be {@code null}.
-     * @return {@link Optional} containing the hotel if found, empty otherwise.
+     * Checks if a hotel by name and city.
+     * @param name The name of the hotel and the city. Cannot be {@code null}.
+     * @return true  if found, false otherwise.
      */
-    Optional<Hotel> findByName(String name);
+    boolean existsByNameAndCity(String name, String city);
+
 }

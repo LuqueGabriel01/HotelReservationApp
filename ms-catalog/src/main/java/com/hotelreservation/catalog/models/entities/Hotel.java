@@ -63,4 +63,20 @@ public class Hotel extends AuditableEntity {
             inverseJoinColumns = @JoinColumn(name = "amenity_id")
     )
     private List<Amenity> amenities = new ArrayList<>();
+
+    public void update(String name, String description, String address,
+                       String city, Integer stars, List<Amenity> amenities) {
+
+        if (name != null)        this.name = name;
+        if (description != null) this.description = description;
+        if (address != null)     this.address = address;
+        if (city != null)        this.city = city;
+        if (stars != null)       this.stars = stars;
+        if (amenities != null){
+          amenities.stream()
+                  .filter(amenity -> !this.amenities.contains(amenity))
+                  .forEach(this.amenities::add);
+        }
+
+    }
 }
