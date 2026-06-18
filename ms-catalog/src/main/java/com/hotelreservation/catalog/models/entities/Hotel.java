@@ -4,6 +4,7 @@ import com.hotelreservation.catalog.models.entities.base.AuditableEntity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -63,6 +64,16 @@ public class Hotel extends AuditableEntity {
             inverseJoinColumns = @JoinColumn(name = "amenity_id")
     )
     private List<Amenity> amenities = new ArrayList<>();
+
+    public Hotel(String name, String description, String address,
+                 String city, int stars, List<Amenity> amenities) {
+        this.name = name;
+        this.description = description;
+        this.address = address;
+        this.city = city;
+        this.stars = stars;
+        this.amenities = amenities;
+    }
 
     public void update(String name, String description, String address,
                        String city, Integer stars, List<Amenity> amenities) {

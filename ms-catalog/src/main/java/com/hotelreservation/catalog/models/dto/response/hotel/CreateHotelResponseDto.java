@@ -5,7 +5,7 @@ import java.util.UUID;
 
 public record CreateHotelResponseDto(
 
-     UUID ID,
+     UUID id,
      String name,
      String city,
      int stars,

@@ -17,6 +17,7 @@ import com.hotelreservation.catalog.models.entities.Hotel;
 import com.hotelreservation.catalog.repositories.AmenityRepository;
 import com.hotelreservation.catalog.repositories.HotelRepository;
 import com.hotelreservation.catalog.specifications.HotelSpecification;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -96,6 +97,7 @@ public class HotelService {
 
     }
 
+    @Transactional
     public CreateHotelResponseDto createHotel(CreateHotelRequestDto newHotel){
 
         if (newHotel == null){
@@ -107,13 +109,22 @@ public class HotelService {
 
         List<Amenity> amenities = amenityRepository.findByNameIn(newHotel.amenities());
 
-        Hotel hotel = hotelMapper.toEntity(newHotel);
+        Hotel hotel = new Hotel(
+                newHotel.name(),
+                newHotel.description(),
+                newHotel.address(),
+                newHotel.city(),
+                newHotel.stars(),
+                amenities
+        );
+
         Hotel savedHotel = hotelRepository.save(hotel);
 
         return hotelMapper.toCreateResponseDto(savedHotel);
 
     }
 
+    @Transactional
     public UpdateHotelResponseDto updateHotel(UpdateHotelRequestDto updatedHotel, UUID id){
 
         if (updatedHotel == null){
@@ -144,6 +155,7 @@ public class HotelService {
         return  hotelMapper.toUpdateResponseDto(savedHotel);
     }
 
+    @Transactional
     public void deleteHotel(UUID id){
         Hotel hotel = hotelRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Hotel with id " + id + " not found"));

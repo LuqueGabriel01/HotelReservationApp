@@ -3,10 +3,13 @@ package com.hotelreservation.catalog.exceptions;
 import com.hotelreservation.catalog.models.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.Instant;
+import java.util.Objects;
 
 /**
  * Centralized exception handling interceptor.
@@ -23,15 +26,27 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * Handles requests with invalid pagination.
+     * Handles requests with invalid filter.
      */
     @ExceptionHandler(InvalidFilterException.class)
     public ResponseEntity<ErrorResponse> handleInvalidFilterException(InvalidFilterException ex){
         return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException ex){
+        String message = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(FieldError::getDefaultMessage)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse("Validation error");
+        return buildError(HttpStatus.BAD_REQUEST, message);
+    }
+
     /**
-     * Handles requests with invalid city.
+     * Handles requests with invalid pagination.
      */
     @ExceptionHandler(InvalidPaginationException.class)
     public ResponseEntity<ErrorResponse> handelInvalidPaginationException(InvalidPaginationException ex){

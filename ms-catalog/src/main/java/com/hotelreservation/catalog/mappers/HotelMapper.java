@@ -30,19 +30,13 @@ public interface HotelMapper {
     @Mapping(target = "amenities", expression = "java(getAmenityNames(hotel))")
     HotelDetailResponseDto toDetailDto(Hotel hotel);
 
-    // -- To Entity --
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "rooms", ignore = true)
-    @Mapping(target = "imagesHotel", ignore = true)
-    @Mapping(target = "amenities", ignore = true)
-    Hotel toEntity(CreateHotelRequestDto hotelRequestDto);
-
     // -- Create --
     @Mapping(target = "createdAt", source = "createdAt")
     CreateHotelResponseDto toCreateResponseDto(Hotel hotel);
 
     // -- Update --
-    @Mapping(target = "createdAt", source = "createdAt")
+    @Mapping(target = "updatedAt", source = "updatedAt")
+    @Mapping(target = "amenities", expression = "java(getAmenityNames(hotel))")
     UpdateHotelResponseDto toUpdateResponseDto(Hotel hotel);
 
     // -- Helpers --
