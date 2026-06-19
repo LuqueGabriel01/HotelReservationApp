@@ -4,6 +4,10 @@ import jakarta.validation.constraints.*;
 
 import java.util.List;
 
+/**
+ * Data transfer object representing the required request payload to register a new hotel.
+ * Includes data validation constraints for incoming parameters.
+ */
 public record CreateHotelRequestDto (
 
      @NotBlank

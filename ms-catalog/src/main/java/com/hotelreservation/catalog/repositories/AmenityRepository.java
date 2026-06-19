@@ -12,5 +12,11 @@ import java.util.List;
 @Repository
 public interface AmenityRepository extends JpaRepository<Amenity, UUID> {
 
+    /**
+     * Retrieves a collection of amenities whose names match any of the values in the provided list.
+     *
+     * @param names A list of amenity name strings to look up
+     * @return A list of matching Amenity entities found in the database
+     */
     List<Amenity> findByNameIn(List<String> names);
 }

@@ -4,6 +4,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Data transfer object representing the confirmation response metadata after successfully updating a hotel.
+ */
 public record UpdateHotelResponseDto (
 
     UUID id,

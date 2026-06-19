@@ -20,26 +20,53 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface HotelMapper {
 
-    // -- Summary --
+    /**
+     * Maps a Hotel entity to a simplified summary response DTO.
+     * Extracts the main image and amenity names using custom helper methods.
+     *
+     * @param hotel The source Hotel entity
+     * @return The populated HotelSummaryResponseDto
+     */
     @Mapping(target = "mainImage", expression = "java(getMainImage(hotel))")
     @Mapping(target = "amenities", expression = "java(getAmenityNames(hotel))")
     HotelSummaryResponseDto toSummaryDto(Hotel hotel);
 
-    // -- Detail --
+    /**
+     * Maps a Hotel entity to a full detailed response DTO.
+     * Resolves all associated images and amenity names.
+     *
+     * @param hotel The source Hotel entity
+     * @return The populated HotelDetailResponseDto
+     */
     @Mapping(target = "images", expression = "java(getAllImages(hotel))")
     @Mapping(target = "amenities", expression = "java(getAmenityNames(hotel))")
     HotelDetailResponseDto toDetailDto(Hotel hotel);
 
-    // -- Create --
+    /**
+     * Maps a recently updated Hotel entity to its update confirmation DTO.
+     *
+     * @param hotel The source Hotel entity
+     * @return The populated UpdateHotelResponseDto
+     */
     @Mapping(target = "createdAt", source = "createdAt")
     CreateHotelResponseDto toCreateResponseDto(Hotel hotel);
 
-    // -- Update --
+    /**
+     * Helper method to extract the URL of the primary image designated as main.
+     *
+     * @param hotel The source Hotel entity
+     * @return The URL of the main image, or null if not found
+     */
     @Mapping(target = "updatedAt", source = "updatedAt")
     @Mapping(target = "amenities", expression = "java(getAmenityNames(hotel))")
     UpdateHotelResponseDto toUpdateResponseDto(Hotel hotel);
 
-    // -- Helpers --
+    /**
+     * Helper method to extract the URL of the primary image designated as main.
+     *
+     * @param hotel The source Hotel entity
+     * @return The URL of the main image, or null if not found
+     */
     default String getMainImage(Hotel hotel){
         return hotel.getImagesHotel().stream()
                 .filter(ImageHotel::isMain)
@@ -49,12 +76,24 @@ public interface HotelMapper {
 
     }
 
+    /**
+     * Helper method to map a list of Amenity entities to their respective name strings.
+     *
+     * @param hotel The source Hotel entity
+     * @return A list of amenity name strings
+     */
     default List<String> getAmenityNames(Hotel hotel){
         return hotel.getAmenities().stream()
                 .map(Amenity::getName)
                 .toList();
     }
 
+    /**
+     * Helper method to transform the hotel's image entities into an image response DTO collection.
+     *
+     * @param hotel The source Hotel entity
+     * @return A list of ImageHotelResponseDto objects
+     */
     default List<ImageHotelResponseDto> getAllImages(Hotel hotel){
         return hotel.getImagesHotel().stream()
                 .map(img -> new ImageHotelResponseDto(img.getId(), img.getUrl(), img.isMain()))

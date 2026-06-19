@@ -5,6 +5,10 @@ import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
 
+/**
+ * Data transfer object representing the required request payload to create a new hotel room.
+ * Includes data validation constraints for incoming parameters.
+ */
 public record CreateRoomRequestDto (
      @NotNull
      RoomType type,

@@ -6,6 +6,10 @@ import jakarta.validation.constraints.Size;
 
 import java.util.List;
 
+/**
+ * Data transfer object representing the request payload to update an existing hotel record.
+ * All fields are optional to allow partial updates while maintaining validation limits.
+ */
 public record UpdateHotelRequestDto (
 
      @Size(max = 100)

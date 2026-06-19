@@ -14,6 +14,9 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * Security interceptor that restricts write actions to administrator users based on HTTP headers.
+ */
 @Component
 @RequiredArgsConstructor
 public class RoleInterceptor implements HandlerInterceptor {
@@ -22,6 +25,16 @@ public class RoleInterceptor implements HandlerInterceptor {
     private static final List<String> ADMIN_ONLY_METHODS =
             List.of("POST", "PUT", "PATCH", "DELETE");
 
+    /**
+     * Intercepts HTTP requests before they reach the controller. Checks if write operations
+     * are authorized by validating the presence and value of the required role header.
+     *
+     * @param request Current HTTP request metadata and headers
+     * @param response Current HTTP response channel
+     * @param handler Execution chain target handler
+     * @return true if the user is authorized to proceed, false otherwise
+     * @throws Exception If an error occurs during JSON writing or response stream processing
+     */
     @Override
     public boolean preHandle(HttpServletRequest request,
                              HttpServletResponse response,
@@ -45,6 +58,15 @@ public class RoleInterceptor implements HandlerInterceptor {
         return true;
     }
 
+    /**
+     * Helper method to intercept and write a standardized JSON error payload to the response stream.
+     *
+     * @param response Current HTTP response channel
+     * @param status Target HTTP status code
+     * @param name Standard error categorization string
+     * @param description Short human-readable explanation of the security violation
+     * @throws Exception If serialization or writing to the response body fails
+     */
     private void writeError(HttpServletResponse response,
                             HttpStatus status,
                             String name,

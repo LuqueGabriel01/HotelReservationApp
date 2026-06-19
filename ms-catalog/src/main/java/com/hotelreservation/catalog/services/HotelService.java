@@ -43,10 +43,12 @@ public class HotelService {
     /**
      * Returns a paginated and filtered list of hotels.
      *
-     * @param filter Filter the hotels by city name and stars
-     * @param page Page number
-     * @param size Page size
-     * @return
+     * @param filter Filter criteria including city name, stars, and amenities
+     * @param page Zero-based page index
+     * @param size Number of records per page
+     * @return Paginated response with hotel summary data
+     * @throws InvalidPaginationException If page or size parameters are invalid
+     * @throws InvalidFilterException If filter criteria are malformed
      */
     public PageResponseDto<HotelSummaryResponseDto> findAllHotels(HotelFilterRequest filter, int page, int size){
 
@@ -88,6 +90,13 @@ public class HotelService {
         );
     }
 
+    /**
+     * Retrieves a detailed hotel overview by its unique identifier.
+     *
+     * @param id Unique identifier of the hotel
+     * @return Detailed hotel data transfer object
+     * @throws NotFoundException If no hotel exists with the given ID
+     */
     public HotelDetailResponseDto findHotelById(UUID id){
 
         Hotel hotel = hotelRepository.findById(id)
@@ -97,6 +106,14 @@ public class HotelService {
 
     }
 
+    /**
+     * Creates and persists a new hotel record.
+     *
+     * @param newHotel DTO containing the information for the new hotel
+     * @return Confirmation DTO of the created hotel
+     * @throws IllegalArgumentException If the input data is null
+     * @throws ResponseStatusException Conflit status if hotel already exists in the city
+     */
     @Transactional
     public CreateHotelResponseDto createHotel(CreateHotelRequestDto newHotel){
 
@@ -124,6 +141,16 @@ public class HotelService {
 
     }
 
+    /**
+     * Updates an existing hotel record with new details.
+     *
+     * @param updatedHotel DTO containing updated fields
+     * @param id Unique identifier of the hotel to update
+     * @return DTO with the updated hotel information
+     * @throws IllegalArgumentException If update data is null
+     * @throws NotFoundException If the hotel to update is not found
+     * @throws InvalidFilterException If any of the provided amenity names do not exist
+     */
     @Transactional
     public UpdateHotelResponseDto updateHotel(UpdateHotelRequestDto updatedHotel, UUID id){
 
@@ -155,6 +182,12 @@ public class HotelService {
         return  hotelMapper.toUpdateResponseDto(savedHotel);
     }
 
+    /**
+     * Deletes a hotel record from the system.
+     *
+     * @param id Unique identifier of the hotel to remove
+     * @throws NotFoundException If the hotel is not found
+     */
     @Transactional
     public void deleteHotel(UUID id){
         Hotel hotel = hotelRepository.findById(id)

@@ -65,6 +65,16 @@ public class Hotel extends AuditableEntity {
     )
     private List<Amenity> amenities = new ArrayList<>();
 
+    /**
+     * All-arguments domain constructor to initialize a new Hotel entity template instance.
+     *
+     * @param name Name of the hotel
+     * @param description Short descriptive context summary
+     * @param address Physical street address map location
+     * @param city Target city geographical zone
+     * @param stars Target tier count classification
+     * @param amenities List of core services associated
+     */
     public Hotel(String name, String description, String address,
                  String city, int stars, List<Amenity> amenities) {
         this.name = name;
@@ -75,6 +85,17 @@ public class Hotel extends AuditableEntity {
         this.amenities = amenities;
     }
 
+    /**
+     * Business logic domain method to safely process partial modifications or dynamic updates
+     * onto properties, while adding non-duplicate new amenities.
+     *
+     * @param name Optional updated name string
+     * @param description Optional updated details content block
+     * @param address Optional updated physical location point
+     * @param city Optional updated municipality location group
+     * @param stars Optional updated quality tier counter
+     * @param amenities Optional target list of catalog reference points to merge
+     */
     public void update(String name, String description, String address,
                        String city, Integer stars, List<Amenity> amenities) {
 
