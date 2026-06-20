@@ -50,7 +50,7 @@ public class RoleInterceptor implements HandlerInterceptor {
                 return false;
             }
 
-            if (!role.equals("ADMIN")) {
+            if (!role.equals("ROLE_ADMIN")) {
                 writeError(response, HttpStatus.FORBIDDEN, "FORBIDDEN", "Access denied");
                 return false;
             }
