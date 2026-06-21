@@ -19,12 +19,15 @@ import com.hotelreservation.catalog.repositories.HotelRepository;
 import com.hotelreservation.catalog.specifications.HotelSpecification;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+import static com.hotelreservation.catalog.config.CacheConfig.HOTEL_DETAIL_CACHE;
+import static com.hotelreservation.catalog.config.CacheConfig.HOTEL_LIST_CACHE;
 
 import java.util.List;
 import java.util.UUID;
@@ -50,6 +53,7 @@ public class HotelService {
      * @throws InvalidPaginationException If page or size parameters are invalid
      * @throws InvalidFilterException If filter criteria are malformed
      */
+    @Cacheable(value = HOTEL_LIST_CACHE, key = "all")
     public PageResponseDto<HotelSummaryResponseDto> findAllHotels(HotelFilterRequest filter, int page, int size){
 
         if (page <0 ){
@@ -97,6 +101,7 @@ public class HotelService {
      * @return Detailed hotel data transfer object
      * @throws NotFoundException If no hotel exists with the given ID
      */
+    @Cacheable(value = HOTEL_DETAIL_CACHE, key = "#id")
     public HotelDetailResponseDto findHotelById(UUID id){
 
         Hotel hotel = hotelRepository.findById(id)
