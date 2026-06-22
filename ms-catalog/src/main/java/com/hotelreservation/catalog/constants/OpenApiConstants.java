@@ -21,6 +21,7 @@ public final class OpenApiConstants {
         public static final String FORBIDDEN = "403";
         public static final String NOT_FOUND = "404";
         public static final String CONFLICT = "409";
+        public static final String INTERNAL_SERVER_ERROR = "500";
 
     }
 }

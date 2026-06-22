@@ -1,5 +1,8 @@
 package com.hotelreservation.catalog.services;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+import com.hotelreservation.catalog.exceptions.ImageUploadException;
 import com.hotelreservation.catalog.exceptions.InvalidFilterException;
 import com.hotelreservation.catalog.exceptions.InvalidPaginationException;
 import com.hotelreservation.catalog.exceptions.NotFoundException;
@@ -29,6 +32,7 @@ import org.springframework.web.server.ResponseStatusException;
 import static com.hotelreservation.catalog.config.CacheConfig.HOTEL_DETAIL_CACHE;
 import static com.hotelreservation.catalog.config.CacheConfig.HOTEL_LIST_CACHE;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +46,7 @@ public class HotelService {
     private final HotelRepository hotelRepository;
     private final AmenityRepository amenityRepository;
     private final HotelMapper hotelMapper;
+    private final Cloudinary cloudinary;
 
     /**
      * Returns a paginated and filtered list of hotels.
@@ -53,7 +58,7 @@ public class HotelService {
      * @throws InvalidPaginationException If page or size parameters are invalid
      * @throws InvalidFilterException If filter criteria are malformed
      */
-    @Cacheable(value = HOTEL_LIST_CACHE, key = "all")
+    @Cacheable(value = HOTEL_LIST_CACHE, key = "'all'")
     public PageResponseDto<HotelSummaryResponseDto> findAllHotels(HotelFilterRequest filter, int page, int size){
 
         if (page <0 ){
@@ -197,7 +202,15 @@ public class HotelService {
     public void deleteHotel(UUID id){
         Hotel hotel = hotelRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Hotel with id " + id + " not found"));
-        //Check for images in Cloudinary if existing.
+
+        hotel.getImagesHotel().forEach(imageHotel -> {
+            try{
+                cloudinary.uploader().destroy(imageHotel.getPublicId(), ObjectUtils.emptyMap());
+            }catch (IOException e){
+                throw new ImageUploadException("Failed to delete image from Cloudinary");
+            }
+        });
+
         hotelRepository.delete(hotel);
     }
 

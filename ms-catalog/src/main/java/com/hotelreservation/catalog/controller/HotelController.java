@@ -231,6 +231,13 @@ public class HotelController {
                     content =
                     @Content(
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = OpenApiConstants.Code.INTERNAL_SERVER_ERROR,
+                    description = "Failed to delete hotel images from Cloudinary",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class)))
     })
     @DeleteMapping(ApiPaths.Hotel.BY_ID)
