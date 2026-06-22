@@ -2,6 +2,7 @@ package com.hotelreservation.catalog.config;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.hotelreservation.catalog.config.properties.HotelCacheProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -37,7 +38,7 @@ public class CacheConfig {
      */
     @Bean
     public CacheManager cacheManager(){
-        if(!properties.isEnabled()){
+        if(!properties.enabled()){
             return new NoOpCacheManager();
         }
 
@@ -61,8 +62,8 @@ public class CacheConfig {
     private CaffeineCache buildCache(String name){
         Cache<Object, Object> cache =
                 Caffeine.newBuilder()
-                        .expireAfterWrite(properties.getTtlMinutes(), TimeUnit.MINUTES)
-                        .maximumSize(properties.getMaxSize())
+                        .expireAfterWrite(properties.ttlMinutes(), TimeUnit.MINUTES)
+                        .maximumSize(properties.maxSize())
                         .recordStats()
                         .build();
 
