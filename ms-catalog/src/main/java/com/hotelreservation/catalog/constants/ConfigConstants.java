@@ -7,11 +7,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ConfigConstants {
 
-    public static final String BASE_PACKAGE = "com.hotelreservation.catalog";
+  public static final String BASE_PACKAGE = "com.hotelreservation.catalog";
 
-    /** Configuration property prefixes used for binding external properties. */
-    public static final class Properties {
-        public static final String HOTEL_CATALOG_CACHE = "hotel.catalog.cache";
-        public static final String CLOUDINARY = "cloudinary";
-    }
+  /** Configuration property prefixes used for binding external properties. */
+  public static final class Properties {
+    public static final String HOTEL_CATALOG_CACHE = "hotel.catalog.cache";
+    public static final String CLOUDINARY = "cloudinary";
+  }
 }

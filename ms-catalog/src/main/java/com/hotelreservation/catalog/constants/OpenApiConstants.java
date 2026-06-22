@@ -7,21 +7,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class OpenApiConstants {
 
-    public static final String BEARER_AUTH = "BearerAuth";
+  /** Centralized codes for HttpStatus. */
+  public static final class Code {
+    public static final String SUCCESS = "200";
+    public static final String CREATED = "202";
+    public static final String NO_CONTENT = "204";
+    public static final String BAD_REQUEST = "400";
+    public static final String NOT_FOUND = "404";
+    public static final String CONFLICT = "409";
+    public static final String INTERNAL_SERVER_ERROR = "500";
+  }
 
-    /**
-     * Centralized codes for OpenAPI.
-     */
-    public static final class Code {
-        public static final String SUCCESS = "200";
-        public static final String CREATED = "202";
-        public static final String NO_CONTENT = "204";
-        public static final String BAD_REQUEST = "400";
-        public static final String UNAUTHORIZED = "401";
-        public static final String FORBIDDEN = "403";
-        public static final String NOT_FOUND = "404";
-        public static final String CONFLICT = "409";
-        public static final String INTERNAL_SERVER_ERROR = "500";
-
-    }
+  /** Centralized constants for examples. */
+  public static final class Example {
+    public static final String EXAMPLE_UUID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    public static final String HOTEL_UUID = "Hotel UUID";
+    public static final String ROOM_UUID = "Room UUID";
+    public static final String IMAGE_UUID = "Image UUID";
+  }
 }

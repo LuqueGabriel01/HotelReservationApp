@@ -6,25 +6,22 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public final class ApiPaths {
 
-    /** Hotel endpoints. */
-    public static final class Hotel {
-        public static final String BASE_URL = "/api/hotels";
-        public static final String BY_ID = "/{id}";
-    }
+  /** Hotel endpoints. */
+  public static final class Hotel {
+    public static final String BASE_URL = "/api/hotels";
+    public static final String BY_ID = "/{id}";
+  }
 
-    /** Room endpoints. */
-    public static final class Room {
-        public static final String ROOMS = "/{hotelId}/rooms";
-        public static final String ROOM_BY_ID = "/{hotelId}/rooms/{roomId}";
-    }
+  /** Room endpoints. */
+  public static final class Room {
+    public static final String ROOMS = "/{hotelId}/rooms";
+    public static final String ROOM_BY_ID = "/{hotelId}/rooms/{roomId}";
+  }
 
-    /** Photo endpoints. */
-    public static final class Photo {
-        public static final String PHOTOS = "/{hotelId}/photos";
-        public static final String PHOTO_BY_ID = "/{hotelId}/photos/{imageId}";
-        public static final String PHOTO_BY_ID_MAIN = "/{hotelId}/photos/{imageId}/main";
-    }
-
-
-
+  /** Photo endpoints. */
+  public static final class Photo {
+    public static final String PHOTOS = "/{hotelId}/photos";
+    public static final String PHOTO_BY_ID = "/{hotelId}/photos/{imageId}";
+    public static final String PHOTO_BY_ID_MAIN = "/{hotelId}/photos/{imageId}/main";
+  }
 }

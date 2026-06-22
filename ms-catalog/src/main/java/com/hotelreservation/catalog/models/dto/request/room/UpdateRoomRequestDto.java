@@ -2,7 +2,6 @@ package com.hotelreservation.catalog.models.dto.request.room;
 
 import com.hotelreservation.catalog.enums.RoomType;
 import jakarta.validation.constraints.Size;
-
 import java.math.BigDecimal;
 
 /**
@@ -10,14 +9,7 @@ import java.math.BigDecimal;
  * All fields are optional to allow partial updates while maintaining structural validation limits.
  */
 public record UpdateRoomRequestDto(
-
-        RoomType type,
-
-        @Size(max = 150)
-        String description,
-
-        Integer capacity,
-
-        BigDecimal pricePerNight
-){
-}
+    RoomType type,
+    @Size(max = 150) String description,
+    Integer capacity,
+    BigDecimal pricePerNight) {}
