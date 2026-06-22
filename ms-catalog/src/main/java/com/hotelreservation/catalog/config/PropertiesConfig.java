@@ -10,5 +10,4 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ConfigurationPropertiesScan(basePackages = ConfigConstants.BASE_PACKAGE)
-public class PropertiesConfig {
-}
+public class PropertiesConfig {}
