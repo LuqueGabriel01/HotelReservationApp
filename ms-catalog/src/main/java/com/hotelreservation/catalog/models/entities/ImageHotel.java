@@ -31,4 +31,22 @@ public class ImageHotel extends AuditableEntity {
 
     @Column(nullable = false)
     private boolean isMain = false;
+
+    @Column
+    private String publicId;
+
+    public ImageHotel(Hotel hotel, String url, String publicId, boolean isMain) {
+        this.hotel = hotel;
+        this.url = url;
+        this.publicId = publicId;
+        this.isMain = isMain;
+    }
+
+    public void markAsMain() {
+        this.isMain = true;
+    }
+
+    public void unmarkAsMain() {
+        this.isMain = false;
+    }
 }

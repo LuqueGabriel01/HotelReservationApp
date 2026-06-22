@@ -10,8 +10,6 @@ public final class ApiPaths {
     public static final class Hotel {
         public static final String BASE_URL = "/api/hotels";
         public static final String BY_ID = "/{id}";
-        public static final String PHOTOS = "/{hotelId}/photos";
-        public static final String PHOTO_BY_ID = "/{hotelId}/photos/{photoId}";
     }
 
     /** Room endpoints. */
@@ -23,7 +21,8 @@ public final class ApiPaths {
     /** Photo endpoints. */
     public static final class Photo {
         public static final String PHOTOS = "/{hotelId}/photos";
-        public static final String PHOTO_BY_ID = "/{hotelId}/photos/{photoId}";
+        public static final String PHOTO_BY_ID = "/{hotelId}/photos/{imageId}";
+        public static final String PHOTO_BY_ID_MAIN = "/{hotelId}/photos/{imageId}/main";
     }
 
 

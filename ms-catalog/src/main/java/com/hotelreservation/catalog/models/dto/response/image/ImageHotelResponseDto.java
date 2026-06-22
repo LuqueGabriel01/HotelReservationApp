@@ -9,7 +9,7 @@ public record ImageHotelResponseDto (
 
     UUID id,
     String url,
-    boolean isMain
+    boolean main
 ){}
 
 

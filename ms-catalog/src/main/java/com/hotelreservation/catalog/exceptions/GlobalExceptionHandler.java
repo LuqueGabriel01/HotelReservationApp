@@ -57,6 +57,14 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * Handles failed image uploads.
+     */
+    @ExceptionHandler(ImageUploadException.class)
+    public ResponseEntity<ErrorResponse> handelImageUploadException(ImageUploadException ex){
+        return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    /**
      * Handles any unexpected exception.
      */
     @ExceptionHandler(Exception.class)

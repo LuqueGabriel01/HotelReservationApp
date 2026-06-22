@@ -1,6 +1,5 @@
 package com.hotelreservation.catalog.mappers;
 
-import com.hotelreservation.catalog.models.dto.request.hotel.CreateHotelRequestDto;
 import com.hotelreservation.catalog.models.dto.response.hotel.CreateHotelResponseDto;
 import com.hotelreservation.catalog.models.dto.response.hotel.HotelDetailResponseDto;
 import com.hotelreservation.catalog.models.dto.response.hotel.HotelSummaryResponseDto;

@@ -6,9 +6,6 @@ import com.hotelreservation.catalog.models.dto.request.room.CreateRoomRequestDto
 import com.hotelreservation.catalog.models.dto.request.room.RoomFilterRequest;
 import com.hotelreservation.catalog.models.dto.request.room.UpdateRoomRequestDto;
 import com.hotelreservation.catalog.models.dto.response.ErrorResponse;
-import com.hotelreservation.catalog.models.dto.response.hotel.CreateHotelResponseDto;
-import com.hotelreservation.catalog.models.dto.response.hotel.HotelSummaryResponseDto;
-import com.hotelreservation.catalog.models.dto.response.hotel.UpdateHotelResponseDto;
 import com.hotelreservation.catalog.models.dto.response.room.RoomResponseDto;
 import com.hotelreservation.catalog.services.RoomService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -159,7 +155,6 @@ public class RoomController {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @Transactional
     @PostMapping(ApiPaths.Room.ROOMS)
     public ResponseEntity<RoomResponseDto> createRoom(
             @Parameter(description = "Hotel UUID", example = "a1b2c3d4-e5f6-7890-abcd-ef1234567890")
@@ -208,7 +203,6 @@ public class RoomController {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @Transactional
     @PutMapping(ApiPaths.Room.ROOM_BY_ID)
     public ResponseEntity<RoomResponseDto> updateRoom(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -254,7 +248,6 @@ public class RoomController {
                             mediaType = MediaType.APPLICATION_JSON_VALUE,
                             schema = @Schema(implementation = ErrorResponse.class)))
     })
-    @Transactional
     @DeleteMapping(ApiPaths.Room.ROOM_BY_ID)
     public ResponseEntity<Void> deleteRoom(
 
