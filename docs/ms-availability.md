@@ -2,35 +2,53 @@
 
 [← Back to README](../README.md)
 
-**Port:** `8083`  
+**Port:** `8084`  
 **Database:** PostgreSQL (`availability_db`)
 
 The `ms-availability` service is the core of the business logic. It determines which rooms are free between two dates and manages temporary locks during the booking process, ensuring that two users cannot reserve the same room at the same time.
 
 ---
 
-## Data Model
+## Database — `availability_db`
 
-### Entity: `RoomAvailability`
+### Table: `room_availability`
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | UUID | Unique identifier |
-| `roomId` | UUID | Reference to the room (from ms-hotel) |
-| `checkIn` | LocalDate | Start date of the occupied period |
-| `checkOut` | LocalDate | End date of the occupied period |
-| `status` | Enum | Current status of the period |
-| `bookingId` | UUID | Reference to the booking (nullable, set on confirmation) |
-| `createdAt` | Instant | Creation timestamp |
-| `updatedAt` | Instant | Last update timestamp |
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Unique identifier |
+| `room_id` | UUID | NOT NULL | Room reference (external — from ms-catalog) |
+| `date` | DATE | NOT NULL | A single blocked or reserved date |
+| `status` | ENUM | NOT NULL | Current status of the date |
+| `booking_id` | UUID | nullable | Booking reference if status is RESERVADA |
+
+### Table: `room_blocks`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Unique identifier (used as `lockId`) |
+| `room_id` | UUID | NOT NULL | Room being blocked (external reference) |
+| `user_id` | UUID | NOT NULL | User who initiated the block (external reference) |
+| `check_in` | DATE | NOT NULL | Check-in date of the intended booking |
+| `check_out` | DATE | NOT NULL | Check-out date of the intended booking |
+| `expires_at` | TIMESTAMP | NOT NULL | When the temporary block expires (default: +10 min) |
 
 ### Enums
 
 ```
-AvailabilityStatus: BLOCKED, RESERVED
+AvailabilityStatus: BLOQUEADA, RESERVADA
 ```
 
-> **Note:** `BLOCKED` is a temporary lock set during the booking flow. It expires automatically if not confirmed within a configured time window (default: 10 minutes). `RESERVED` is a permanent lock set once a booking is confirmed.
+> **No DISPONIBLE status.** A room is considered available when there are **no records** in `room_availability` for those dates. Only occupied dates are stored, which keeps the table lightweight.
+
+### Relationships
+
+No real foreign keys between tables — `room_id`, `user_id` and `booking_id` are logical references to other microservices. No cross-service FK constraints.
+
+---
+
+## How availability is modelled per day
+
+Each row in `room_availability` represents **one blocked or reserved date** for a room. For a booking from March 10 to March 15, five rows are inserted (one per night: March 10, 11, 12, 13, 14). This approach makes querying specific dates very efficient and avoids complex date range overlap logic.
 
 ---
 
@@ -40,37 +58,30 @@ AvailabilityStatus: BLOCKED, RESERVED
 
 **Access:** Public
 
-**Description:** Returns a list of available rooms for a given hotel between two dates. A room is considered available if it has no `BLOCKED` or `RESERVED` entries overlapping with the requested period.
+**Description:** Returns available rooms for a hotel between two dates. A room is available if it has no `BLOQUEADA` or `RESERVADA` entries for any date in the requested range.
 
 **Query Parameters:**
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
 | `hotelId` | UUID | Yes | Hotel to search in |
-| `checkIn` | LocalDate | Yes | Check-in date (`YYYY-MM-DD`) |
-| `checkOut` | LocalDate | Yes | Check-out date (`YYYY-MM-DD`) |
+| `checkIn` | Date | Yes | Check-in date (`YYYY-MM-DD`) |
+| `checkOut` | Date | Yes | Check-out date (`YYYY-MM-DD`) |
 
 **Response `200 OK`:**
 ```json
 [
   {
     "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-    "name": "Deluxe Double Room",
+    "type": "DOBLE",
     "capacity": 2,
     "pricePerNight": 180.00,
-    "available": true
-  },
-  {
-    "roomId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-    "name": "Superior Suite",
-    "capacity": 4,
-    "pricePerNight": 320.00,
     "available": true
   }
 ]
 ```
 
-**Response `400 Bad Request`** — when dates are invalid:
+**Response `400 Bad Request`:**
 ```json
 {
   "code": 400,
@@ -86,20 +97,7 @@ AvailabilityStatus: BLOCKED, RESERVED
 
 **Access:** Public
 
-**Description:** Returns the availability status of a specific room for a given date range.
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `roomId` | UUID | Room identifier |
-
-**Query Parameters:**
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `checkIn` | LocalDate | Yes | Check-in date (`YYYY-MM-DD`) |
-| `checkOut` | LocalDate | Yes | Check-out date (`YYYY-MM-DD`) |
+**Description:** Returns availability status for a specific room and date range.
 
 **Response `200 OK`:**
 ```json
@@ -107,18 +105,8 @@ AvailabilityStatus: BLOCKED, RESERVED
   "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "checkIn": "2025-03-10",
   "checkOut": "2025-03-15",
-  "available": true
-}
-```
-
-**Response `200 OK`** — when the room is not available:
-```json
-{
-  "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-  "checkIn": "2025-03-10",
-  "checkOut": "2025-03-15",
   "available": false,
-  "reason": "RESERVED"
+  "reason": "RESERVADA"
 }
 ```
 
@@ -128,18 +116,12 @@ AvailabilityStatus: BLOCKED, RESERVED
 
 **Access:** Authenticated users
 
-**Description:** Temporarily locks a room for a given date range while the user completes the booking process. If the booking is not confirmed within the lock window (default: 10 minutes), the lock expires automatically and the room becomes available again.
+**Description:** Temporarily locks a room by creating a `room_blocks` entry. Uses pessimistic locking to prevent race conditions. Returns a `lockId` the client must send when creating the booking.
 
 **Headers:**
 ```
 Authorization: Bearer <token>
 ```
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `roomId` | UUID | Room identifier |
 
 **Request Body:**
 ```json
@@ -156,12 +138,11 @@ Authorization: Bearer <token>
   "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "checkIn": "2025-03-10",
   "checkOut": "2025-03-15",
-  "status": "BLOCKED",
   "expiresAt": "2025-01-15T10:40:00Z"
 }
 ```
 
-**Response `409 Conflict`** — when the room is already blocked or reserved:
+**Response `409 Conflict`:**
 ```json
 {
   "code": 409,
@@ -177,50 +158,23 @@ Authorization: Bearer <token>
 
 **Access:** Authenticated users
 
-**Description:** Manually releases a temporary block on a room, making it available again. This is called when a user abandons the booking process.
-
-**Headers:**
-```
-Authorization: Bearer <token>
-```
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `roomId` | UUID | Room identifier |
+**Description:** Manually releases a temporary block when the user abandons the booking process.
 
 **Query Parameters:**
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `lockId` | UUID | Yes | Lock identifier returned when the block was created |
+| `lockId` | UUID | Yes | Lock identifier returned on block creation |
 
 **Response `204 No Content`**
 
-**Response `404 Not Found`** — when the lock does not exist or has already expired:
-```json
-{
-  "code": 404,
-  "name": "NOT_FOUND",
-  "description": "Active lock not found for the given roomId and lockId",
-  "timestamp": "2025-01-15T10:30:00Z"
-}
-```
-
 ---
 
-### 5. `PUT /api/availability/{roomId}/reserve`
+### 5. `PUT /api/availability/{roomId}/reserve` *(internal)*
 
-**Access:** Internal (called by ms-booking)
+**Access:** Internal — called by ms-booking only, not exposed through the gateway.
 
-**Description:** Converts a temporary block into a permanent reservation after a booking has been confirmed. This endpoint is intended for internal service-to-service communication only and is not exposed through the API Gateway.
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `roomId` | UUID | Room identifier |
+**Description:** Converts the `room_blocks` entry into permanent `room_availability` rows (one per night) with status `RESERVADA`. Called after a booking is confirmed.
 
 **Request Body:**
 ```json
@@ -235,13 +189,11 @@ Authorization: Bearer <token>
 {
   "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "bookingId": "e5f6a7b8-c9d0-1234-ef01-345678901234",
-  "checkIn": "2025-03-10",
-  "checkOut": "2025-03-15",
-  "status": "RESERVED"
+  "status": "RESERVADA"
 }
 ```
 
-**Response `404 Not Found`** — when the lock has expired or does not exist:
+**Response `404 Not Found`** — when the lock has expired:
 ```json
 {
   "code": 404,
@@ -253,17 +205,11 @@ Authorization: Bearer <token>
 
 ---
 
-### 6. `PUT /api/availability/{roomId}/release`
+### 6. `PUT /api/availability/{roomId}/release` *(internal)*
 
-**Access:** Internal (called by ms-booking)
+**Access:** Internal — called by ms-booking only, not exposed through the gateway.
 
-**Description:** Releases a confirmed reservation, making the room available again. This is called when a booking is cancelled. This endpoint is intended for internal service-to-service communication only.
-
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `roomId` | UUID | Room identifier |
+**Description:** Deletes all `room_availability` rows for a given booking, making the room available again. Called when a booking is cancelled.
 
 **Request Body:**
 ```json
@@ -275,39 +221,23 @@ Authorization: Bearer <token>
 **Response `200 OK`:**
 ```json
 {
+  "released": true,
   "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-  "bookingId": "e5f6a7b8-c9d0-1234-ef01-345678901234",
-  "status": "RELEASED"
-}
-```
-
-**Response `404 Not Found`:**
-```json
-{
-  "code": 404,
-  "name": "NOT_FOUND",
-  "description": "No active reservation found for bookingId e5f6a7b8-c9d0-1234-ef01-345678901234",
-  "timestamp": "2025-01-15T10:30:00Z"
+  "bookingId": "e5f6a7b8-c9d0-1234-ef01-345678901234"
 }
 ```
 
 ---
 
-## Concurrency Handling
+## Scheduled Jobs
 
-To prevent double bookings, this service applies a **pessimistic locking** strategy at the database level when checking and setting availability. The flow is:
-
-1. User initiates a booking → `POST /api/availability/{roomId}/block` is called.
-2. The service acquires a row-level lock and checks for overlapping entries.
-3. If the room is free, a `BLOCKED` entry is created with an expiry timestamp.
-4. If the booking is confirmed within the time window → `PUT /api/availability/{roomId}/reserve` converts the block to `RESERVED`.
-5. If the time window expires without confirmation, a scheduled job automatically removes stale `BLOCKED` entries.
+| Job | Schedule | Action |
+|---|---|---|
+| `StaleBlockCleanupJob` | Every 60 seconds | Deletes `room_blocks` entries whose `expires_at` is in the past |
 
 ---
 
 ## Error Format
-
-All error responses follow a consistent structure:
 
 | Field | Type | Description |
 |---|---|---|

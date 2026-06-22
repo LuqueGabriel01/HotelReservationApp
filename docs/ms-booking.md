@@ -2,50 +2,94 @@
 
 [← Back to README](../README.md)
 
-**Port:** `8084`  
+**Port:** `8083`  
 **Database:** PostgreSQL (`booking_db`)  
 **Messaging:** Kafka (producer)
 
-The `ms-booking` service manages the full lifecycle of a reservation. It coordinates with `ms-availability` to lock and confirm rooms, and publishes events to Kafka so that other services (such as `ms-notification`) can react automatically.
+The `ms-booking` service manages the full lifecycle of a reservation. It coordinates with `ms-availability` to lock and confirm rooms, fetches room and hotel data from `ms-catalog` at creation time, and publishes events to Kafka so that `ms-notification` reacts automatically.
 
 ---
 
-## Data Model
+## Database — `booking_db`
 
-### Entity: `Booking`
+### Table: `bookings`
 
-| Field | Type | Description |
-|---|---|---|
-| `id` | UUID | Unique identifier |
-| `userId` | UUID | Reference to the user who made the booking |
-| `roomId` | UUID | Reference to the booked room |
-| `hotelId` | UUID | Reference to the hotel |
-| `checkIn` | LocalDate | Check-in date |
-| `checkOut` | LocalDate | Check-out date |
-| `nights` | Integer | Total number of nights |
-| `pricePerNight` | BigDecimal | Price per night at the time of booking |
-| `totalPrice` | BigDecimal | Total price (`nights × pricePerNight`) |
-| `status` | Enum | Current booking status |
-| `createdAt` | Instant | Booking creation timestamp |
-| `updatedAt` | Instant | Last update timestamp |
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Unique identifier |
+| `user_id` | UUID | NOT NULL | User who made the booking (external ref — ms-auth) |
+| `hotel_id` | UUID | NOT NULL | Hotel reference (external ref — ms-catalog) |
+| `hotel_name` | VARCHAR | NOT NULL | Hotel name snapshot at booking time |
+| `room_id` | UUID | NOT NULL | Room reference (external ref — ms-catalog) |
+| `room_type` | VARCHAR | NOT NULL | Room type snapshot at booking time |
+| `check_in` | DATE | NOT NULL | Check-in date |
+| `check_out` | DATE | NOT NULL | Check-out date |
+| `nights` | INT | NOT NULL | Number of nights (computed) |
+| `price_per_night` | DECIMAL | NOT NULL | Price snapshot at booking time |
+| `total_price` | DECIMAL | NOT NULL | Total price (`nights × price_per_night`) |
+| `status` | ENUM | NOT NULL | Current booking status |
+| `created_at` | TIMESTAMP | NOT NULL | Booking creation timestamp |
+
+### Table: `booking_history`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | UUID | PK | Unique identifier |
+| `booking_id` | UUID | FK → bookings, NOT NULL | Booking this record belongs to |
+| `previous_status` | ENUM | NOT NULL | Status before the change |
+| `new_status` | ENUM | NOT NULL | Status after the change |
+| `changed_at` | TIMESTAMP | NOT NULL | When the change occurred |
+| `reason` | VARCHAR | nullable | Reason for the change (e.g. "Cancelled by user") |
 
 ### Enums
 
 ```
-BookingStatus: PENDING, CONFIRMED, CANCELLED
+BookingStatus: PENDIENTE, CONFIRMADA, CANCELADA
 ```
+
+### Relationships
+
+- `bookings` 1 → N `booking_history`
+- `user_id`, `hotel_id`, `room_id` are external references — no real FK constraints across microservices.
+
+> **Snapshot fields:** `hotel_name`, `room_type` and `price_per_night` are stored as snapshots at creation time. They do not change if the hotel or room data is updated later in ms-catalog. A booking is a contract at a point in time.
+
+---
+
+## How room_id and other data are populated
+
+When a booking is created, `ms-booking` does **not** ask the client for all data. The flow is:
+
+1. The client sends `roomId`, `hotelId`, `checkIn`, `checkOut` and `lockId`.
+2. `ms-booking` calls `ms-catalog` via WebClient to fetch `pricePerNight`, `roomType` and `hotelName`.
+3. `ms-booking` calls `ms-availability` to confirm the lock.
+4. `ms-booking` computes `nights` and `totalPrice`, then persists the booking.
+5. A `booking_history` entry is inserted with `previous_status: null` and `new_status: CONFIRMADA`.
+
+This means `room_id` always comes from the client (the user already selected it in the availability search), while the rest of the room and hotel data is fetched from `ms-catalog` at creation time and stored as a snapshot.
 
 ---
 
 ## Booking Flow
 
-The booking process involves coordination between multiple services:
-
-1. **Client** calls `POST /api/availability/{roomId}/block` on `ms-availability` to temporarily lock the room.
-2. **Client** calls `POST /api/bookings` on `ms-booking` with the `lockId`.
-3. **ms-booking** calls `PUT /api/availability/{roomId}/reserve` on `ms-availability` to confirm the lock.
-4. **ms-booking** saves the booking with status `CONFIRMED` and publishes a `booking.confirmed` event to Kafka.
-5. **ms-notification** consumes the event and sends a confirmation email to the user.
+```
+Client → POST /api/bookings
+           │
+           ├── 1. WebClient → ms-catalog: GET /api/hotels/{hotelId}/rooms/{roomId}
+           │       └── fetch: pricePerNight, roomType, hotelName
+           │
+           ├── 2. WebClient → ms-availability: PUT /api/availability/{roomId}/reserve
+           │       └── confirm lock with lockId → get RESERVADA confirmation
+           │
+           ├── 3. Compute nights = checkOut - checkIn
+           │        totalPrice = nights × pricePerNight
+           │
+           ├── 4. Persist booking with status CONFIRMADA
+           │
+           ├── 5. Insert booking_history row (null → CONFIRMADA)
+           │
+           └── 6. Publish booking.confirmed event to Kafka
+```
 
 ---
 
@@ -55,7 +99,7 @@ The booking process involves coordination between multiple services:
 
 **Access:** Authenticated users
 
-**Description:** Creates and confirms a new booking. Requires a valid `lockId` obtained from `ms-availability`. If the lock has expired, the booking will be rejected.
+**Description:** Creates and confirms a new booking. Requires a valid `lockId` from ms-availability.
 
 **Headers:**
 ```
@@ -73,24 +117,21 @@ Authorization: Bearer <token>
 }
 ```
 
-**Validation Rules:**
-- `roomId`, `hotelId`, `checkIn`, `checkOut`, and `lockId` are required.
-- `checkOut` must be after `checkIn`.
-- The `lockId` must correspond to an active, non-expired block in `ms-availability`.
-
 **Response `201 Created`:**
 ```json
 {
   "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
   "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "hotelName": "Grand Hotel Barcelona",
+  "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "roomType": "DOBLE",
   "checkIn": "2025-03-10",
   "checkOut": "2025-03-15",
   "nights": 5,
   "pricePerNight": 180.00,
   "totalPrice": 900.00,
-  "status": "CONFIRMED",
+  "status": "CONFIRMADA",
   "createdAt": "2025-01-15T10:30:00Z"
 }
 ```
@@ -105,69 +146,48 @@ Authorization: Bearer <token>
 }
 ```
 
-**Response `400 Bad Request`:**
-```json
-{
-  "code": 400,
-  "name": "BAD_REQUEST",
-  "description": "checkOut date must be after checkIn date",
-  "timestamp": "2025-01-15T10:30:00Z"
-}
-```
-
 ---
 
 ### 2. `GET /api/bookings/{id}`
 
 **Access:** Authenticated users (own booking) / ADMIN (any booking)
 
-**Description:** Returns the full detail of a specific booking. A regular user can only retrieve their own bookings.
+**Description:** Returns the full detail of a booking. Regular users can only access their own bookings.
 
 **Headers:**
 ```
 Authorization: Bearer <token>
 ```
 
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `id` | UUID | Booking identifier |
-
 **Response `200 OK`:**
 ```json
 {
   "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
-  "userId": "550e8400-e29b-41d4-a716-446655440000",
-  "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-  "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "hotelName": "Grand Hotel Barcelona",
+  "roomType": "DOBLE",
   "checkIn": "2025-03-10",
   "checkOut": "2025-03-15",
   "nights": 5,
   "pricePerNight": 180.00,
   "totalPrice": 900.00,
-  "status": "CONFIRMED",
-  "createdAt": "2025-01-15T10:30:00Z",
-  "updatedAt": "2025-01-15T10:30:00Z"
+  "status": "CONFIRMADA",
+  "history": [
+    {
+      "previousStatus": null,
+      "newStatus": "CONFIRMADA",
+      "changedAt": "2025-01-15T10:30:00Z",
+      "reason": null
+    }
+  ]
 }
 ```
 
-**Response `403 Forbidden`** — when a user tries to access another user's booking:
+**Response `403 Forbidden`:**
 ```json
 {
   "code": 403,
   "name": "FORBIDDEN",
   "description": "You do not have permission to access this booking",
-  "timestamp": "2025-01-15T10:30:00Z"
-}
-```
-
-**Response `404 Not Found`:**
-```json
-{
-  "code": 404,
-  "name": "NOT_FOUND",
-  "description": "Booking with id e5f6a7b8-c9d0-1234-ef01-345678901234 not found",
   "timestamp": "2025-01-15T10:30:00Z"
 }
 ```
@@ -178,7 +198,7 @@ Authorization: Bearer <token>
 
 **Access:** Authenticated users
 
-**Description:** Returns all bookings belonging to the currently authenticated user.
+**Description:** Returns a paginated list of all bookings for the authenticated user.
 
 **Headers:**
 ```
@@ -189,7 +209,7 @@ Authorization: Bearer <token>
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `status` | Enum | No | Filter by booking status (`CONFIRMED`, `CANCELLED`) |
+| `status` | Enum | No | Filter by status (`CONFIRMADA`, `CANCELADA`) |
 | `page` | Integer | No | Page number (default: 0) |
 | `size` | Integer | No | Page size (default: 10) |
 
@@ -199,12 +219,12 @@ Authorization: Bearer <token>
   "content": [
     {
       "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
-      "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "hotelName": "Grand Hotel Barcelona",
+      "roomType": "DOBLE",
       "checkIn": "2025-03-10",
       "checkOut": "2025-03-15",
       "totalPrice": 900.00,
-      "status": "CONFIRMED"
+      "status": "CONFIRMADA"
     }
   ],
   "page": 0,
@@ -220,25 +240,19 @@ Authorization: Bearer <token>
 
 **Access:** Authenticated users (own booking) / ADMIN (any booking)
 
-**Description:** Cancels an existing booking. The service calls `ms-availability` to release the room and publishes a `booking.cancelled` event to Kafka. Only bookings with status `CONFIRMED` can be cancelled.
+**Description:** Cancels a confirmed booking. Calls ms-availability to release the room, updates the booking status to `CANCELADA`, inserts a `booking_history` row, and publishes a `booking.cancelled` event to Kafka.
 
 **Headers:**
 ```
 Authorization: Bearer <token>
 ```
 
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `id` | UUID | Booking identifier |
-
 **Response `200 OK`:**
 ```json
 {
   "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
-  "status": "CANCELLED",
-  "updatedAt": "2025-01-16T09:00:00Z"
+  "status": "CANCELADA",
+  "changedAt": "2025-01-16T09:00:00Z"
 }
 ```
 
@@ -265,14 +279,6 @@ Authorization: Bearer <token>
 Authorization: Bearer <token>
 ```
 
-**Query Parameters:**
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `status` | Enum | No | Filter by booking status |
-| `page` | Integer | No | Page number (default: 0) |
-| `size` | Integer | No | Page size (default: 20) |
-
 **Response `200 OK`:**
 ```json
 {
@@ -280,12 +286,12 @@ Authorization: Bearer <token>
     {
       "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
       "userId": "550e8400-e29b-41d4-a716-446655440000",
-      "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-      "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "hotelName": "Grand Hotel Barcelona",
+      "roomType": "DOBLE",
       "checkIn": "2025-03-10",
       "checkOut": "2025-03-15",
       "totalPrice": 900.00,
-      "status": "CONFIRMED"
+      "status": "CONFIRMADA"
     }
   ],
   "page": 0,
@@ -308,20 +314,6 @@ Authorization: Bearer <token>
 Authorization: Bearer <token>
 ```
 
-**Path Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `hotelId` | UUID | Hotel identifier |
-
-**Query Parameters:**
-
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `status` | Enum | No | Filter by booking status |
-| `page` | Integer | No | Page number (default: 0) |
-| `size` | Integer | No | Page size (default: 20) |
-
 **Response `200 OK`:**
 ```json
 {
@@ -329,11 +321,11 @@ Authorization: Bearer <token>
     {
       "id": "e5f6a7b8-c9d0-1234-ef01-345678901234",
       "userId": "550e8400-e29b-41d4-a716-446655440000",
-      "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+      "roomType": "DOBLE",
       "checkIn": "2025-03-10",
       "checkOut": "2025-03-15",
       "totalPrice": 900.00,
-      "status": "CONFIRMED"
+      "status": "CONFIRMADA"
     }
   ],
   "page": 0,
@@ -347,10 +339,10 @@ Authorization: Bearer <token>
 
 ## Kafka Events Published
 
-| Topic | Trigger | Payload |
+| Topic | Trigger | Description |
 |---|---|---|
-| `booking.confirmed` | Booking is created and confirmed | `bookingId`, `userId`, `hotelId`, `roomId`, `checkIn`, `checkOut`, `totalPrice` |
-| `booking.cancelled` | Booking is cancelled | `bookingId`, `userId`, `hotelId`, `checkIn`, `checkOut` |
+| `booking.confirmed` | Booking created and confirmed | Triggers confirmation email in ms-notification |
+| `booking.cancelled` | Booking cancelled | Triggers cancellation email in ms-notification |
 
 ### Example Payload — `booking.confirmed`
 
@@ -359,8 +351,10 @@ Authorization: Bearer <token>
   "eventType": "booking.confirmed",
   "bookingId": "e5f6a7b8-c9d0-1234-ef01-345678901234",
   "userId": "550e8400-e29b-41d4-a716-446655440000",
+  "userEmail": "johndoe@email.com",
   "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "hotelName": "Grand Hotel Barcelona",
+  "roomType": "DOBLE",
   "checkIn": "2025-03-10",
   "checkOut": "2025-03-15",
   "totalPrice": 900.00,
@@ -371,8 +365,6 @@ Authorization: Bearer <token>
 ---
 
 ## Error Format
-
-All error responses follow a consistent structure:
 
 | Field | Type | Description |
 |---|---|---|
