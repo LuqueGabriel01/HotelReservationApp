@@ -82,11 +82,13 @@ RoomType: SIMPLE, DOBLE, SUITE
 
 **Query Parameters:**
 
-| Parameter | Type | Required | Description |
-|---|---|---|---|
-| `city` | String | No | Filter by city |
-| `page` | Integer | No | Page number (default: 0) |
-| `size` | Integer | No | Page size (default: 10) |
+| Parameter   | Type         | Required | Description              |
+|-------------|--------------|---|--------------------------|
+| `city`      | String       | No | Filter by city           |
+| `stars`     | Integer      | No | Filter by stars (1-5)    |
+| `amenities` | List<String> | No | Filter by amenity names  |
+| `page`      | Integer      | No | Page number (default: 0) |
+| `size`      | Integer      | No | Page size (default: 10)  |
 
 **Response `200 OK`:**
 ```json
@@ -234,6 +236,15 @@ Authorization: Bearer <token>
 
 **Description:** Returns all rooms belonging to a specific hotel.
 
+**Query Parameters:**
+
+| Parameter   | Type       | Required | Description                   |
+|-------------|------------|---|-------------------------------|
+| `capacity`  | Integer    | No | Filter by capacity            |
+| `type`      | String     | No | Filter by room type)          |
+| `Min price` | BigDecimal | No | Filter by minimal price range |
+| `Max price` | BigDecimal | No | Filter by maximum price range |
+
 **Response `200 OK`:**
 ```json
 [
@@ -351,7 +362,7 @@ Authorization: Bearer <token>
 
 **Access:** ADMIN only
 
-**Description:** Uploads one or more photos for a hotel. Stored in Cloudinary. The first uploaded photo or the one flagged `isMain: true` is set as the main image.
+**Description:** Uploads one or more photos for a hotel. Stored in Cloudinary. All the photos uploaded will have `isMain: false` by default.
 
 **Headers:**
 ```
@@ -365,6 +376,30 @@ Content-Type: multipart/form-data
   {
     "id": "f1e2d3c4-b5a6-7890-abcd-ef1234567890",
     "url": "https://res.cloudinary.com/demo/image/upload/hotel1.jpg",
+    "isMain": false
+  }
+]
+```
+
+---
+
+### 12. `PATCH /api/hotels/{id}/photos/{iamgeId}/main`
+
+**Access:** ADMIN only
+
+**Description:** Set a specific image from a hotel to be the main one.
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`:**
+```json
+[
+  {
+    "id": "f1e2d3c4-b5a6-7890-abcd-ef1234567890",
+    "url": "https://res.cloudinary.com/demo/image/upload/hotel1.jpg",
     "isMain": true
   }
 ]
@@ -372,7 +407,7 @@ Content-Type: multipart/form-data
 
 ---
 
-### 12. `DELETE /api/hotels/{id}/photos/{photoId}`
+### 13. `DELETE /api/hotels/{id}/photos/{iamgeId}`
 
 **Access:** ADMIN only
 
