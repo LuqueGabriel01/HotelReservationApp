@@ -64,8 +64,8 @@ public class RoomService {
   }
 
   /**
-   * Helper internal method to safely validate room query filter configurations.
-   * Separated to reduce method cyclomatic complexity under acceptable linter metrics.
+   * Helper internal method to safely validate room query filter configurations. Separated to reduce
+   * method cyclomatic complexity under acceptable linter metrics.
    */
   private void validateFilter(RoomFilterRequest filter) {
     if (filter == null) {
@@ -76,18 +76,14 @@ public class RoomService {
     validatePriceBounds(filter);
   }
 
-  /**
-   * Validates capacity boundaries for the provided filter.
-   */
+  /** Validates capacity boundaries for the provided filter. */
   private void validateDimensions(RoomFilterRequest filter) {
     if (filter.capacity() != null && filter.capacity() < 0) {
       throw new InvalidFilterException("Capacity can not be a negative number");
     }
   }
 
-  /**
-   * Validates pricing logic constraints and consistency.
-   */
+  /** Validates pricing logic constraints and consistency. */
   private void validatePriceBounds(RoomFilterRequest filter) {
     if (filter.minPrice() != null && filter.minPrice().compareTo(BigDecimal.ZERO) < 0) {
       throw new InvalidFilterException("Min price cannot be negative");
@@ -102,9 +98,7 @@ public class RoomService {
     }
   }
 
-  /**
-   * Verifies that the minimum price threshold does not exceed the maximum pricing cap.
-   */
+  /** Verifies that the minimum price threshold does not exceed the maximum pricing cap. */
   private void checkPriceRange(BigDecimal minPrice, BigDecimal maxPrice) {
     if (minPrice.compareTo(maxPrice) > 0) {
       throw new InvalidFilterException("Min price cannot be greater than max price");
