@@ -10,6 +10,7 @@ public record AvailabilityRoomResponseDto(
         UUID roomId,
         LocalDate checkIn,
         LocalDate checkOut,
-        AvailabilityStatus available
+        boolean available,
+        AvailabilityStatus reason
 ) {
 }

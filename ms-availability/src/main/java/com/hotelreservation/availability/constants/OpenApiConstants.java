@@ -17,4 +17,11 @@ public final class OpenApiConstants {
     public static final String CONFLICT = "409";
     public static final String INTERNAL_SERVER_ERROR = "500";
   }
+
+  /** Centralized constants for examples. */
+  public static final class Example {
+    public static final String EXAMPLE_UUID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+    public static final String HOTEL_UUID = "Hotel UUID";
+    public static final String ROOM_UUID = "Room UUID";
+  }
 }

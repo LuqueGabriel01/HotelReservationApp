@@ -30,25 +30,31 @@ public class GlobalExceptionHandler {
   /** Handles date validation in requests. */
   @ExceptionHandler(InvalidDateRangeException.class)
   public ResponseEntity<ErrorResponse> handleInvalidDateRangeException(InvalidDateRangeException ex){
-    return buildError(HttpStatus.BAD_REQUEST, "Invalid date range request");
+    return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());
   }
 
   /** Handles room's availability. */
   @ExceptionHandler(RoomNotAvailableException.class)
   public ResponseEntity<ErrorResponse> handleRoomNotAvailableException(RoomNotAvailableException ex){
-    return buildError(HttpStatus.NOT_FOUND, "The room is not available");
+    return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
   }
 
-  /** Handles not found room block. */
-  @ExceptionHandler(RoomBlockNotFoundException.class)
-  public ResponseEntity<ErrorResponse> handleRoomBlockNotFoundException(RoomBlockNotFoundException ex){
-    return buildError(HttpStatus.NOT_FOUND, "The room block is not found");
+  /** Handles not found exception. */
+  @ExceptionHandler(NotFoundException.class)
+  public ResponseEntity<ErrorResponse> handleNotFoundException(NotFoundException ex){
+    return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
+  }
+
+  /** Handles external micro-services unavailability. */
+  @ExceptionHandler(ExternalServiceUnavailableException.class)
+  public ResponseEntity<ErrorResponse> handleExternalServiceUnavailableException(ExternalServiceUnavailableException ex){
+    return buildError(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
   }
 
   /** Handles any unexpected exception. */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
-    return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+    return buildError(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
   }
 
   private ResponseEntity<ErrorResponse> buildError(HttpStatus status, String description) {
