@@ -55,4 +55,6 @@ public interface AvailabilityRepository extends JpaRepository<RoomAvailability, 
      */
     int countByRoomIdAndDateIn(UUID roomId, List<LocalDate> dates);
 
+    void deleteByRoomIdAndDateIn(UUID roomId, List<LocalDate> dates);
+
 }

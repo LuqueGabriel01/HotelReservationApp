@@ -51,6 +51,12 @@ public class GlobalExceptionHandler {
     return buildError(HttpStatus.SERVICE_UNAVAILABLE, ex.getMessage());
   }
 
+  /** Handles external forbidden exceptions. */
+  @ExceptionHandler(ForbiddenException.class)
+  public ResponseEntity<ErrorResponse> handleForbiddenException(ExternalServiceUnavailableException ex){
+    return buildError(HttpStatus.FORBIDDEN, ex.getMessage());
+  }
+
   /** Handles any unexpected exception. */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {

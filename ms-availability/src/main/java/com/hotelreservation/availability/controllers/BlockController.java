@@ -98,6 +98,57 @@ public class BlockController {
             @RequestHeader(HeaderConstants.Security.X_USER_ID) UUID userId
             ){
         return ResponseEntity.status(HttpStatus.OK).body(blockService.blockRoom(hotelId, roomId, userId, dates.checkIn(), dates.checkOut()));
+    }
 
+    @Operation(
+            summary = "Block an available room temporally between two dates.",
+            description =
+                    """
+                            Block an available room between two date ranges.
+                            Checks first if the room is still available,
+                            blocks it the required days.
+                            Changes the status in AVAILABILITY and then saves the blocks"
+                            """
+    )
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = OpenApiConstants.Code.NO_CONTENT,
+                    description = "Room blocked successfully."),
+            @ApiResponse(
+                    responseCode = OpenApiConstants.Code.NOT_FOUND,
+                    description = "Room block or user not found.",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(
+                    responseCode = OpenApiConstants.Code.FORBIDDEN,
+                    description = "Room block not owned by this user",
+                    content =
+                    @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ErrorResponse.class))),
+
+    })
+    @DeleteMapping(ApiPaths.Availability.BY_ROOM_ID_BLOCK)
+    public ResponseEntity<Void> deleteRoomBlock (
+            @Parameter(
+                    description = OpenApiConstants.Example.ROOM_UUID,
+                    example = OpenApiConstants.Example.EXAMPLE_UUID)
+            @PathVariable UUID roomId,
+
+            @Parameter(description = OpenApiConstants.Example.LOCK_UUID, example = OpenApiConstants.Example.EXAMPLE_UUID)
+            @RequestParam UUID lockId,
+
+            @Parameter(
+                    description = "ID of the authenticated user, extracted from JWT by the gateway",
+                    example = OpenApiConstants.Example.EXAMPLE_UUID,
+                    hidden = true
+            )
+            @RequestHeader(HeaderConstants.Security.X_USER_ID) UUID userId
+    ){
+
+        blockService.deleteRoomBlock(userId, lockId);
+        return ResponseEntity.noContent().build();
     }
 }

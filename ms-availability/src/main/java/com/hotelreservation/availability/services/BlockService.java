@@ -3,10 +3,7 @@ package com.hotelreservation.availability.services;
 import com.hotelreservation.availability.client.CatalogClient;
 import com.hotelreservation.availability.constants.ErrorConstants;
 import com.hotelreservation.availability.enums.AvailabilityStatus;
-import com.hotelreservation.availability.exception.ExternalServiceUnavailableException;
-import com.hotelreservation.availability.exception.InvalidDateRangeException;
-import com.hotelreservation.availability.exception.NotFoundException;
-import com.hotelreservation.availability.exception.RoomNotAvailableException;
+import com.hotelreservation.availability.exception.*;
 import com.hotelreservation.availability.mapper.RoomBlockMapper;
 import com.hotelreservation.availability.models.dtos.external.RoomDto;
 import com.hotelreservation.availability.models.dtos.response.roomblock.RoomBlockResponseDto;
@@ -96,6 +93,31 @@ public class BlockService {
         availabilityRepository.saveAll(blockedDates);
 
         return mapper.toRoomBlockResponseDto(saved);
+    }
+
+    /**
+     * Deletes a specific room block if it belongs to the requesting user.
+     * <p>
+     * This operation also releases the associated blocked dates from the availability record.
+     *
+     * @param userId the unique identifier of the user requesting the deletion
+     * @param lockId the unique identifier of the room block to delete
+     * @throws NotFoundException  if no room block is found with the given ID
+     * @throws ForbiddenException if the room block does not belong to the requesting user
+     */
+    @Transactional
+    public void deleteRoomBlock(UUID userId, UUID lockId){
+
+        RoomBlock roomBlock = blockRepository.findById(lockId)
+                .orElseThrow(() -> new NotFoundException(ErrorConstants.Error.ROOM_BLOCK_WITH_ID + lockId + ErrorConstants.Error.NOT_FOUND_SUFFIX));
+
+        if (!roomBlock.getUserId().equals(userId)){
+            throw new ForbiddenException(ErrorConstants.Error.ROOM_BLOCKED_NOT_OWNED);
+        }
+
+        List<LocalDate> dates = roomBlock.getCheckIn().datesUntil(roomBlock.getCheckOut()).toList();
+        availabilityRepository.deleteByRoomIdAndDateIn(roomBlock.getRoomId(), dates);
+        blockRepository.delete(roomBlock);
     }
 
 }
