@@ -19,13 +19,4 @@ public final class HeaderConstants {
     public static final String X_USER_ROLE = "X-User-Role";
   }
 
-  /** Predefined configurations and allowed headers for CORS policy. */
-  public static final class Cors {
-    public static final List<String> ALLOWED_HEADERS =
-        List.of(
-            Security.AUTHORIZATION,
-            Security.CONTENT_TYPE,
-            Security.X_USER_ID,
-            Security.X_USER_ROLE);
-  }
 }

@@ -10,6 +10,6 @@ public record RoomBlockResponseDto(
         UUID roomId,
         LocalDate checkIn,
         LocalDate checkOut,
-        Instant expiresAT
+        Instant expiresAt
 ) {
 }

@@ -16,6 +16,7 @@ public final class OpenApiConstants {
     public static final String NOT_FOUND = "404";
     public static final String CONFLICT = "409";
     public static final String INTERNAL_SERVER_ERROR = "500";
+    public static final String SERVICE_UNAVAILABLE = "503";
   }
 
   /** Centralized constants for examples. */
@@ -23,5 +24,6 @@ public final class OpenApiConstants {
     public static final String EXAMPLE_UUID = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
     public static final String HOTEL_UUID = "Hotel UUID";
     public static final String ROOM_UUID = "Room UUID";
+    public static final String DATES = "Dates";
   }
 }

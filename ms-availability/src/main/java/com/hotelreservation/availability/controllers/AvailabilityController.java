@@ -26,10 +26,10 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
-
+/** REST controller endpoints managing room availability. */
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "Room availability controller", description = "Endpoints for hotel persistence")
+@Tag(name = "Room availability controller", description = "Endpoints for room availability persistence")
 @RequestMapping(ApiPaths.BASE_URL)
 public class AvailabilityController {
 
@@ -40,7 +40,7 @@ public class AvailabilityController {
             description =
                     """
                             Get all the rooms from catalog by hotel id and date range.
-                            Check the availabality in those rooms,
+                            Check the availability in those rooms,
                             return only the available ones.
                             """
     )

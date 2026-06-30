@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
   /** Handles room's availability. */
   @ExceptionHandler(RoomNotAvailableException.class)
   public ResponseEntity<ErrorResponse> handleRoomNotAvailableException(RoomNotAvailableException ex){
-    return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
+    return buildError(HttpStatus.CONFLICT, ex.getMessage());
   }
 
   /** Handles not found exception. */

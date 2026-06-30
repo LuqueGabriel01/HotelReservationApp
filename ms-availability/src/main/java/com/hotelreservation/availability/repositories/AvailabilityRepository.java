@@ -46,4 +46,13 @@ public interface AvailabilityRepository extends JpaRepository<RoomAvailability, 
             List<LocalDate> dates
     );
 
+    /**
+     * Counts availability records for a room on specific dates.
+     *
+     * @param roomId Target room ID.
+     * @param dates  List of dates to check.
+     * @return Number of occupied dates.
+     */
+    int countByRoomIdAndDateIn(UUID roomId, List<LocalDate> dates);
+
 }

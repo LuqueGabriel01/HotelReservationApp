@@ -16,5 +16,6 @@ public final class ErrorConstants {
     public static final String MS_CATALOG_UNAVAILABLE = "Catalog is not available right now";
     public static final String DATE_ERROR = "The dates must be different";
     public static final String DATE_REQUIRED = "Check in and check out are required";
+    public static final String ROOM_UNAVAILABLE = "Room not available right now";
   }
 }
