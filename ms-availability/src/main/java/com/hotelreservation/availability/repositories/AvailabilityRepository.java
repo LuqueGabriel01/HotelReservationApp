@@ -1,6 +1,7 @@
 package com.hotelreservation.availability.repositories;
 import com.hotelreservation.availability.models.entities.RoomAvailability;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -55,6 +56,9 @@ public interface AvailabilityRepository extends JpaRepository<RoomAvailability, 
      */
     int countByRoomIdAndDateIn(UUID roomId, List<LocalDate> dates);
 
+    @Modifying
+    @Query("DELETE FROM RoomAvailability a WHERE a.roomId = :roomId AND a.date IN :dates")
     void deleteByRoomIdAndDateIn(UUID roomId, List<LocalDate> dates);
 
+    List<RoomAvailability> findByBookingId(UUID booking);
 }
