@@ -1,8 +1,7 @@
 package com.hotelreservation.availability.models.dtos.response;
 
-import lombok.Builder;
-
 import java.time.Instant;
+import lombok.Builder;
 
 /** Data transfer object (DTO) representing an API error response. */
 @Builder

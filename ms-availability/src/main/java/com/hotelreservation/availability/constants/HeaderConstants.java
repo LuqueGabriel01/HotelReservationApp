@@ -3,8 +3,6 @@ package com.hotelreservation.availability.constants;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
-
 /** Centralized definition of HTTP header names and security-related constants. */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class HeaderConstants {
@@ -18,5 +16,4 @@ public final class HeaderConstants {
     public static final String X_USER_ID = "X-User-Id";
     public static final String X_USER_ROLE = "X-User-Role";
   }
-
 }

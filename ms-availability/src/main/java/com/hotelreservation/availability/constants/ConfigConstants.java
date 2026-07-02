@@ -8,5 +8,4 @@ import lombok.NoArgsConstructor;
 public final class ConfigConstants {
 
   public static final String BASE_PACKAGE = "com.hotelreservation.availability";
-
 }
