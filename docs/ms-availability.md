@@ -35,7 +35,7 @@ The `ms-availability` service is the core of the business logic. It determines w
 ### Enums
 
 ```
-AvailabilityStatus: BLOQUEADA, RESERVADA
+AvailabilityStatus: BLOCKED, RESERVED
 ```
 
 > **No DISPONIBLE status.** A room is considered available when there are **no records** in `room_availability` for those dates. Only occupied dates are stored, which keeps the table lightweight.
@@ -99,6 +99,12 @@ Each row in `room_availability` represents **one blocked or reserved date** for 
 
 **Description:** Returns availability status for a specific room and date range.
 
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `hotelId` | UUID | Yes | Hotel to search in |
+
 **Response `200 OK`:**
 ```json
 {
@@ -106,7 +112,7 @@ Each row in `room_availability` represents **one blocked or reserved date** for 
   "checkIn": "2025-03-10",
   "checkOut": "2025-03-15",
   "available": false,
-  "reason": "RESERVADA"
+  "reason": "RESERVED"
 }
 ```
 
@@ -122,6 +128,11 @@ Each row in `room_availability` represents **one blocked or reserved date** for 
 ```
 Authorization: Bearer <token>
 ```
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `hotelId` | UUID | Yes | Hotel to search in |
 
 **Request Body:**
 ```json
@@ -189,7 +200,7 @@ Authorization: Bearer <token>
 {
   "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "bookingId": "e5f6a7b8-c9d0-1234-ef01-345678901234",
-  "status": "RESERVADA"
+  "status": "RESERVED"
 }
 ```
 
