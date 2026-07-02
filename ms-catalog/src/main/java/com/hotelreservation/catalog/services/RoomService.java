@@ -4,6 +4,7 @@ import com.hotelreservation.catalog.constants.ErrorConstants;
 import com.hotelreservation.catalog.exceptions.InvalidFilterException;
 import com.hotelreservation.catalog.exceptions.NotFoundException;
 import com.hotelreservation.catalog.mappers.RoomMapper;
+import com.hotelreservation.catalog.models.dto.external.BookingRequestDto;
 import com.hotelreservation.catalog.models.dto.request.room.CreateRoomRequestDto;
 import com.hotelreservation.catalog.models.dto.request.room.RoomFilterRequest;
 import com.hotelreservation.catalog.models.dto.request.room.UpdateRoomRequestDto;
@@ -139,7 +140,7 @@ public class RoomService {
           ErrorConstants.Error.ROOM_NOT_FOUND_PREFIX
               + id
               + ErrorConstants.Error.NOT_FOUND_SUFFIX_IN_
-              + " hotel with id "
+              + ErrorConstants.Error.HOTEL_NOT_FOUND
               + hotelId);
     }
 
@@ -224,7 +225,7 @@ public class RoomService {
           ErrorConstants.Error.ROOM_NOT_FOUND_PREFIX
               + id
               + ErrorConstants.Error.NOT_FOUND_SUFFIX_IN_
-              + " hotel with id "
+              + ErrorConstants.Error.HOTEL_NOT_FOUND
               + hotelId);
     }
 
@@ -265,10 +266,43 @@ public class RoomService {
           ErrorConstants.Error.ROOM_NOT_FOUND_PREFIX
               + id
               + ErrorConstants.Error.NOT_FOUND_SUFFIX_IN_
-              + " hotel with id "
+              + ErrorConstants.Error.HOTEL_NOT_FOUND
               + hotelId);
     }
 
     roomRepository.delete(room);
+  }
+
+  /**
+   * Retrieves booking information for a specific room after verifying its hotel ownership.
+   *
+   * @param hotelId the unique identifier of the hotel
+   * @param roomId the unique identifier of the room
+   * @return a {@link BookingRequestDto} containing the room and hotel details
+   * @throws NotFoundException if the room does not exist or does not belong to the given hotel
+   */
+  @org.springframework.transaction.annotation.Transactional(readOnly = true)
+  public BookingRequestDto getRoomBookingInfo(UUID hotelId, UUID roomId) {
+
+    Room room =
+        roomRepository
+            .findById(roomId)
+            .orElseThrow(
+                () ->
+                    new NotFoundException(
+                        ErrorConstants.Error.ROOM_NOT_FOUND_PREFIX
+                            + roomId
+                            + ErrorConstants.Error.NOT_FOUND_SUFFIX));
+
+    if (!room.getHotel().getId().equals(hotelId)) {
+      throw new NotFoundException(
+          ErrorConstants.Error.ROOM_NOT_FOUND_PREFIX
+              + roomId
+              + ErrorConstants.Error.NOT_FOUND_SUFFIX_IN_
+              + ErrorConstants.Error.HOTEL_NOT_FOUND
+              + hotelId);
+    }
+
+    return roomMapper.toBookingRequestDto(room);
   }
 }

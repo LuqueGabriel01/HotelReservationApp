@@ -2,6 +2,7 @@ package com.hotelreservation.catalog.controller;
 
 import com.hotelreservation.catalog.constants.ApiPaths;
 import com.hotelreservation.catalog.constants.OpenApiConstants;
+import com.hotelreservation.catalog.models.dto.external.BookingRequestDto;
 import com.hotelreservation.catalog.models.dto.request.room.CreateRoomRequestDto;
 import com.hotelreservation.catalog.models.dto.request.room.RoomFilterRequest;
 import com.hotelreservation.catalog.models.dto.request.room.UpdateRoomRequestDto;
@@ -283,5 +284,40 @@ public class RoomController {
           UUID roomId) {
     roomService.deleteRoom(hotelId, roomId);
     return ResponseEntity.noContent().build();
+  }
+
+  @Operation(
+      summary = "Get hotel and room info for booking proccess",
+      description =
+          """
+                            Get the data from the hotel and the room.
+                            """)
+  @ApiResponses({
+    @ApiResponse(
+        responseCode = OpenApiConstants.Code.SUCCESS,
+        description = "Hotel and room data fetched correctly.",
+        content =
+            @Content(
+                mediaType = MediaType.APPLICATION_JSON_VALUE,
+                schema = @Schema(implementation = BookingRequestDto.class))),
+    @ApiResponse(
+        responseCode = OpenApiConstants.Code.NOT_FOUND,
+        description = "Hotel or room with that id not found.",
+        content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+  })
+  @GetMapping(ApiPaths.Booking.ROOM_BY_ID_BOOKING)
+  public ResponseEntity<BookingRequestDto> getRoomBookingInfo(
+      @Parameter(
+              description = OpenApiConstants.Example.HOTEL_UUID,
+              example = OpenApiConstants.Example.EXAMPLE_UUID)
+          @PathVariable
+          UUID hotelId,
+      @Parameter(
+              description = OpenApiConstants.Example.ROOM_UUID,
+              example = OpenApiConstants.Example.EXAMPLE_UUID)
+          @PathVariable
+          UUID roomId) {
+    return ResponseEntity.status(HttpStatus.OK)
+        .body(roomService.getRoomBookingInfo(hotelId, roomId));
   }
 }
