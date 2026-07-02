@@ -68,11 +68,6 @@ public class AuthenticationGlobalFilter implements GlobalFilter, Ordered {
                         .header(HeaderConstants.Security.X_USER_ROLE, headerRole))
             .build();
 
-    System.out.println(
-        mutatedExchange.getRequest().getHeaders().get(HeaderConstants.Security.X_USER_ID));
-    System.out.println(
-        mutatedExchange.getRequest().getHeaders().get(HeaderConstants.Security.X_USER_ROLE));
-
     return chain.filter(mutatedExchange);
   }
 
