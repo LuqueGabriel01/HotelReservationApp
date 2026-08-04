@@ -54,7 +54,6 @@ public class GlobalExceptionHandler {
   /** Handles any unexpected exception. */
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
-    ex.printStackTrace();
     return buildError(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
   }
 
