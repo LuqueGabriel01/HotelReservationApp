@@ -9,6 +9,7 @@ public record BookingRequestDto(
     UUID id,
     UUID hotelId,
     String hotelName,
+    String hotelAddress,
     RoomType type,
     String description,
     int capacity,
