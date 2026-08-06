@@ -8,11 +8,11 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 
 /** Configuration class for OpenAPI (Swagger) documentation. */
 @OpenAPIDefinition(
-        info = @Info(title = "Authentication Api", description = "REST API", version = "1.0"))
+    info = @Info(title = "Authentication Api", description = "REST API", version = "1.0"))
 @SecurityScheme(
-        name = OpenApiConstants.BEARER_AUTH,
-        description = "JWT Authentication header",
-        type = SecuritySchemeType.HTTP,
-        scheme = "bearer",
-        bearerFormat = "JWT")
+    name = OpenApiConstants.BEARER_AUTH,
+    description = "JWT Authentication header",
+    type = SecuritySchemeType.HTTP,
+    scheme = "bearer",
+    bearerFormat = "JWT")
 public class OpenApiConfig {}
