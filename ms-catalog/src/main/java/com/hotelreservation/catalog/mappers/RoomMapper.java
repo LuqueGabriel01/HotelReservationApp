@@ -32,5 +32,6 @@ public interface RoomMapper {
    */
   @Mapping(target = "hotelId", source = "hotel.id")
   @Mapping(target = "hotelName", source = "hotel.name")
+  @Mapping(target = "hotelAddress", source = "hotel.address")
   BookingRequestDto toBookingRequestDto(Room room);
 }

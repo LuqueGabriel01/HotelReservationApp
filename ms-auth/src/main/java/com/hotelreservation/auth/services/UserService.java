@@ -7,6 +7,7 @@ import com.hotelreservation.auth.models.dtos.response.LoginResponse;
 import com.hotelreservation.auth.models.dtos.response.RefreshResponse;
 import com.hotelreservation.auth.models.dtos.response.RegisterResponse;
 import com.hotelreservation.auth.models.dtos.response.UserResponse;
+import java.util.UUID;
 
 /** Service contract for managing user-related operations. */
 public interface UserService {
@@ -20,4 +21,6 @@ public interface UserService {
   UserResponse getProfile(String email);
 
   RegisterResponse updateProfile(UpdateProfileRequest request, String email);
+
+  UserResponse getUserInfo(UUID id);
 }

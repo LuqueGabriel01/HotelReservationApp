@@ -51,6 +51,8 @@ public class SecurityConfig {
             auth ->
                 auth.requestMatchers(HttpMethod.GET, ApiPaths.Actuator.HEALTH)
                     .permitAll()
+                    .requestMatchers(ApiPaths.Auth.INTERNAL_ME)
+                    .permitAll()
                     .requestMatchers(HttpMethod.POST, ApiPaths.Auth.LOGOUT)
                     .authenticated()
                     .requestMatchers(ApiPaths.Docs.SWAGGER_UI, ApiPaths.Docs.API_DOCS)
