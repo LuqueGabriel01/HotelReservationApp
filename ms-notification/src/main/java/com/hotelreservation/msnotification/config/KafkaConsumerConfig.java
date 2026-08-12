@@ -131,10 +131,11 @@ public class KafkaConsumerConfig {
    */
   @Bean
   public DefaultErrorHandler errorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
-    DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
+    DeadLetterPublishingRecoverer recoverer =
+        new DeadLetterPublishingRecoverer(
             kafkaTemplate,
-            (record, exception) -> new TopicPartition(FieldsConstant.Topics.NOTIFICATIONS_DLQ, record.partition())
-    );
+            (record, exception) ->
+                new TopicPartition(FieldsConstant.Topics.NOTIFICATIONS_DLQ, record.partition()));
 
     FixedBackOff backOff = new FixedBackOff(1000L, 2L);
 
