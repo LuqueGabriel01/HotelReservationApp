@@ -2,6 +2,7 @@ package com.hotelreservation.msnotification.config;
 
 import static com.hotelreservation.msnotification.constants.ConfigConstants.BASE_PACKAGE_DTO;
 
+import com.hotelreservation.msnotification.constants.FieldsConstant;
 import com.hotelreservation.msnotification.dtos.BookingCancelledEvent;
 import com.hotelreservation.msnotification.dtos.BookingConfirmedEvent;
 import com.hotelreservation.msnotification.dtos.BookingReminderEvent;
@@ -9,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.kafka.autoconfigure.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,8 +18,12 @@ import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.DefaultErrorHandler;
 import org.springframework.kafka.support.serializer.ErrorHandlingDeserializer;
 import org.springframework.kafka.support.serializer.JacksonJsonDeserializer;
+import org.springframework.util.backoff.FixedBackOff;
 
 /** Kafka consumer configuration for the booking event listeners. */
 @Configuration
@@ -55,10 +61,11 @@ public class KafkaConsumerConfig {
    */
   @Bean
   public ConcurrentKafkaListenerContainerFactory<String, BookingConfirmedEvent>
-      bookingConfirmedListenerContainerFactory() {
+      bookingConfirmedListenerContainerFactory(DefaultErrorHandler errorHandler) {
     ConcurrentKafkaListenerContainerFactory<String, BookingConfirmedEvent> factory =
         new ConcurrentKafkaListenerContainerFactory<>();
     factory.setConsumerFactory(bookingConfirmedConsumerFactory());
+    factory.setCommonErrorHandler(errorHandler);
     return factory;
   }
 
@@ -81,10 +88,11 @@ public class KafkaConsumerConfig {
    */
   @Bean
   public ConcurrentKafkaListenerContainerFactory<String, BookingCancelledEvent>
-      bookingCancelledListenerContainerFactory() {
+      bookingCancelledListenerContainerFactory(DefaultErrorHandler errorHandler) {
     ConcurrentKafkaListenerContainerFactory<String, BookingCancelledEvent> factory =
         new ConcurrentKafkaListenerContainerFactory<>();
     factory.setConsumerFactory(bookingCancelledConsumerFactory());
+    factory.setCommonErrorHandler(errorHandler);
     return factory;
   }
 
@@ -107,10 +115,29 @@ public class KafkaConsumerConfig {
    */
   @Bean
   public ConcurrentKafkaListenerContainerFactory<String, BookingReminderEvent>
-      bookingReminderListenerContainerFactory() {
+      bookingReminderListenerContainerFactory(DefaultErrorHandler errorHandler) {
     ConcurrentKafkaListenerContainerFactory<String, BookingReminderEvent> factory =
         new ConcurrentKafkaListenerContainerFactory<>();
     factory.setConsumerFactory(bookingReminderConsumerFactory());
+    factory.setCommonErrorHandler(errorHandler);
     return factory;
+  }
+
+  /**
+   * Builds the default error handler configured with a fixed backoff strategy and DLQ recovery.
+   *
+   * @param kafkaTemplate the {@link KafkaTemplate} used to publish failed messages to the DLQ
+   * @return the configured {@link DefaultErrorHandler} for handling consumer errors
+   */
+  @Bean
+  public DefaultErrorHandler errorHandler(KafkaTemplate<String, Object> kafkaTemplate) {
+    DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(
+            kafkaTemplate,
+            (record, exception) -> new TopicPartition(FieldsConstant.Topics.NOTIFICATIONS_DLQ, record.partition())
+    );
+
+    FixedBackOff backOff = new FixedBackOff(1000L, 2L);
+
+    return new DefaultErrorHandler(recoverer, backOff);
   }
 }
