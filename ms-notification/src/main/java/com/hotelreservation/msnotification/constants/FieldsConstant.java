@@ -19,6 +19,7 @@ public final class FieldsConstant {
     public static final String BOOKING_CONFIRMED = "booking.confirmed";
     public static final String BOOKING_CANCELLED = "booking.cancelled";
     public static final String BOOKING_REMINDER = "booking.reminder";
+    public static final String NOTIFICATIONS_DLQ = "booking.notifications.dlq";
   }
 
   /** Variable names used in the Thymeleaf template contexts. */
