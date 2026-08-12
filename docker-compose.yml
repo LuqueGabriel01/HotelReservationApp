@@ -183,9 +183,16 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8085:8085"
+    depends_on:
+      - kafka
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      EMAIL_HOST: ${EMAIL_HOST}
+      EMAIL_PORT: ${EMAIL_PORT}
+      EMAIL_SESSION: ${EMAIL_SESSION}
+      EMAIL_EXTERNAL_KEY: ${EMAIL_EXTERNAL_KEY}
     restart: on-failure
     networks:
       - hotel-reservation-network
