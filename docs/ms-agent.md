@@ -3,9 +3,15 @@
 [← Back to README](../README.md)
 
 **Port:** `8086`  
-**External:** OpenAI API
+**External:** Google Gemini API (Interactions API)
 
-The `ms-agent` service connects the application to OpenAI's API. It offers two features: a room recommender based on user preferences, and a customer support chatbot that answers frequently asked questions about the hotel.
+The `ms-agent` service connects the application to Google's Gemini API. It offers two features: a room recommender based on user preferences, and a customer support chatbot that answers frequently asked questions about the hotel.
+
+**Implementation notes:**
+- The chatbot is scoped with a `system_instruction` so it only answers hotel-related questions (policies, check-in/check-out, services, amenities) and always replies in the same language the guest used.
+- Each Gemini request carries a `generation_config` (`temperature`, `max_output_tokens`, `thinking_level`). Chat uses a low thinking level for fast, FAQ-style replies; recommendations leave the default thinking budget for more reasoning over the catalog data.
+- Chat session state (`sessionId`, `previousInteractionId`, `hotelId`) is persisted in Redis with a configurable TTL (`chat.session-ttl-minutes`), so multi-turn conversations continue across requests without resending history.
+- Requires the `GEMINI_API_KEY` environment variable.
 
 ---
 
@@ -15,7 +21,7 @@ The `ms-agent` service connects the application to OpenAI's API. It offers two f
 
 **Access:** Authenticated users
 
-**Description:** Recommends available rooms based on the user's stated preferences (number of guests, budget, desired dates, special requirements). The service queries `ms-catalog` to retrieve current room data and sends it to OpenAI along with the user's preferences to generate a ranked list of recommendations with explanations.
+**Description:** Recommends available rooms based on the user's stated preferences (number of guests, budget, desired dates, special requirements). The service queries `ms-catalog` to retrieve current room data and sends it to Gemini along with the user's preferences to generate a ranked list of recommendations with explanations.
 
 **Headers:**
 ```
@@ -46,7 +52,7 @@ Authorization: Bearer <token>
   "recommendations": [
     {
       "roomId": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
-      "roomName": "Deluxe Double Room",
+      "roomType": "DOUBLE",
       "pricePerNight": 180.00,
       "capacity": 2,
       "score": 1,
@@ -54,7 +60,7 @@ Authorization: Bearer <token>
     },
     {
       "roomId": "c3d4e5f6-a7b8-9012-cdef-123456789012",
-      "roomName": "Superior Suite",
+      "roomType": "SUITE",
       "pricePerNight": 320.00,
       "capacity": 4,
       "score": 2,
@@ -68,18 +74,18 @@ Authorization: Bearer <token>
 ```json
 {
   "code": 404,
-  "name": "NOT_FOUND",
+  "name": "Not Found",
   "description": "No available rooms found for the given hotel and dates",
   "timestamp": "2025-01-15T10:30:00Z"
 }
 ```
 
-**Response `503 Service Unavailable`** — when the OpenAI API is unreachable:
+**Response `503 Service Unavailable`** — when `ms-catalog` or Gemini cannot be reached, or Gemini returns an error:
 ```json
 {
   "code": 503,
-  "name": "SERVICE_UNAVAILABLE",
-  "description": "The AI service is temporarily unavailable. Please try again later.",
+  "name": "Service Unavailable",
+  "description": "Could not reach Gemini",
   "timestamp": "2025-01-15T10:30:00Z"
 }
 ```
@@ -114,22 +120,22 @@ Authorization: Bearer <token>
 }
 ```
 
-**Response `400 Bad Request`** — when the message is empty:
+**Response `400 Bad Request`** — when `message` or `hotelId` is missing:
 ```json
 {
   "code": 400,
-  "name": "BAD_REQUEST",
-  "description": "Message field must not be empty",
+  "name": "Bad Request",
+  "description": "must not be blank",
   "timestamp": "2025-01-15T10:30:00Z"
 }
 ```
 
-**Response `503 Service Unavailable`** — when the OpenAI API is unreachable:
+**Response `503 Service Unavailable`** — when Gemini cannot be reached or returns an error:
 ```json
 {
   "code": 503,
-  "name": "SERVICE_UNAVAILABLE",
-  "description": "The AI service is temporarily unavailable. Please try again later.",
+  "name": "Service Unavailable",
+  "description": "Could not reach Gemini",
   "timestamp": "2025-01-15T10:30:00Z"
 }
 ```
