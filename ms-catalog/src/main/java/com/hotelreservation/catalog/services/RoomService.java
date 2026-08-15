@@ -55,7 +55,8 @@ public class RoomService {
     validateFilter(filter);
 
     Specification<Room> spec =
-        Specification.where(RoomSpecification.hasCapacity(filter.capacity()))
+        Specification.where(RoomSpecification.belongsToHotel(hotelId))
+            .and(RoomSpecification.hasCapacity(filter.capacity()))
             .and(RoomSpecification.hasType(filter.type()))
             .and(RoomSpecification.hasPriceBetween(filter.minPrice(), filter.maxPrice()));
 
