@@ -14,49 +14,49 @@ The `ms-catalog` service acts as the application's catalog. It manages all hotel
 
 ### Table: `hotels`
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | UUID | PK | Unique identifier |
-| `name` | VARCHAR | NOT NULL | Hotel name |
-| `description` | TEXT | | Full description |
-| `address` | VARCHAR | NOT NULL | Physical address |
-| `city` | VARCHAR | NOT NULL | City |
-| `stars` | INT | NOT NULL, 1–5 | Star rating |
-| `created_at` | TIMESTAMP | NOT NULL | Creation timestamp |
+| Column        | Type      | Constraints   | Description        |
+|---------------|-----------|---------------|--------------------|
+| `id`          | UUID      | PK            | Unique identifier  |
+| `name`        | VARCHAR   | NOT NULL      | Hotel name         |
+| `description` | TEXT      |               | Full description   |
+| `address`     | VARCHAR   | NOT NULL      | Physical address   |
+| `city`        | VARCHAR   | NOT NULL      | City               |
+| `stars`       | INT       | NOT NULL, 1–5 | Star rating        |
+| `created_at`  | TIMESTAMP | NOT NULL      | Creation timestamp |
 
 ### Table: `rooms`
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | UUID | PK | Unique identifier |
-| `hotel_id` | UUID | FK → hotels, NOT NULL | Hotel it belongs to |
-| `type` | ENUM | NOT NULL | Room type |
-| `price_per_night` | DECIMAL | NOT NULL | Price per night |
-| `capacity` | INT | NOT NULL | Maximum number of guests |
-| `description` | TEXT | | Room description |
+| Column            | Type    | Constraints           | Description              |
+|-------------------|---------|-----------------------|--------------------------|
+| `id`              | UUID    | PK                    | Unique identifier        |
+| `hotel_id`        | UUID    | FK → hotels, NOT NULL | Hotel it belongs to      |
+| `type`            | ENUM    | NOT NULL              | Room type                |
+| `price_per_night` | DECIMAL | NOT NULL              | Price per night          |
+| `capacity`        | INT     | NOT NULL              | Maximum number of guests |
+| `description`     | TEXT    |                       | Room description         |
 
 ### Table: `hotel_images`
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | UUID | PK | Unique identifier |
-| `hotel_id` | UUID | FK → hotels, NOT NULL | Hotel it belongs to |
-| `url` | VARCHAR | NOT NULL | Cloudinary public URL |
-| `is_main` | BOOLEAN | NOT NULL, default false | Whether it is the main image |
+| Column     | Type    | Constraints             | Description                  |
+|------------|---------|-------------------------|------------------------------|
+| `id`       | UUID    | PK                      | Unique identifier            |
+| `hotel_id` | UUID    | FK → hotels, NOT NULL   | Hotel it belongs to          |
+| `url`      | VARCHAR | NOT NULL                | Cloudinary public URL        |
+| `is_main`  | BOOLEAN | NOT NULL, default false | Whether it is the main image |
 
 ### Table: `amenities`
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `id` | UUID | PK | Unique identifier |
+| Column | Type    | Constraints      | Description                         |
+|--------|---------|------------------|-------------------------------------|
+| `id`   | UUID    | PK               | Unique identifier                   |
 | `name` | VARCHAR | UNIQUE, NOT NULL | Amenity name (wifi, pool, parking…) |
 
 ### Table: `hotel_amenities` *(pivot — N:M)*
 
-| Column | Type | Constraints | Description |
-|---|---|---|---|
-| `hotel_id` | UUID | FK → hotels, PK | Hotel |
-| `amenity_id` | UUID | FK → amenities, PK | Amenity |
+| Column       | Type | Constraints        | Description |
+|--------------|------|--------------------|-------------|
+| `hotel_id`   | UUID | FK → hotels, PK    | Hotel       |
+| `amenity_id` | UUID | FK → amenities, PK | Amenity     |
 
 ### Enums
 
@@ -83,12 +83,12 @@ RoomType: SIMPLE, DOBLE, SUITE
 **Query Parameters:**
 
 | Parameter   | Type         | Required | Description              |
-|-------------|--------------|---|--------------------------|
-| `city`      | String       | No | Filter by city           |
-| `stars`     | Integer      | No | Filter by stars (1-5)    |
-| `amenities` | List<String> | No | Filter by amenity names  |
-| `page`      | Integer      | No | Page number (default: 0) |
-| `size`      | Integer      | No | Page size (default: 10)  |
+|-------------|--------------|----------|--------------------------|
+| `city`      | String       | No       | Filter by city           |
+| `stars`     | Integer      | No       | Filter by stars (1-5)    |
+| `amenities` | List<String> | No       | Filter by amenity names  |
+| `page`      | Integer      | No       | Page number (default: 0) |
+| `size`      | Integer      | No       | Page size (default: 10)  |
 
 **Response `200 OK`:**
 ```json
@@ -239,11 +239,11 @@ Authorization: Bearer <token>
 **Query Parameters:**
 
 | Parameter   | Type       | Required | Description                   |
-|-------------|------------|---|-------------------------------|
-| `capacity`  | Integer    | No | Filter by capacity            |
-| `type`      | String     | No | Filter by room type)          |
-| `Min price` | BigDecimal | No | Filter by minimal price range |
-| `Max price` | BigDecimal | No | Filter by maximum price range |
+|-------------|------------|----------|-------------------------------|
+| `capacity`  | Integer    | No       | Filter by capacity            |
+| `type`      | String     | No       | Filter by room type)          |
+| `Min price` | BigDecimal | No       | Filter by minimal price range |
+| `Max price` | BigDecimal | No       | Filter by maximum price range |
 
 **Response `200 OK`:**
 ```json
@@ -251,7 +251,7 @@ Authorization: Bearer <token>
   {
     "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
     "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-    "type": "DOBLE",
+    "type": "DOUBLE",
     "description": "Spacious room with sea views.",
     "capacity": 2,
     "pricePerNight": 180.00
@@ -272,7 +272,7 @@ Authorization: Bearer <token>
 {
   "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "type": "DOBLE",
+  "type": "DOUBLE",
   "description": "Spacious room with sea views.",
   "capacity": 2,
   "pricePerNight": 180.00
@@ -295,7 +295,7 @@ Authorization: Bearer <token>
 **Request Body:**
 ```json
 {
-  "type": "DOBLE",
+  "type": "DOUBLE",
   "description": "Spacious room with sea views.",
   "capacity": 2,
   "pricePerNight": 180.00
@@ -307,7 +307,7 @@ Authorization: Bearer <token>
 {
   "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
   "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "type": "DOBLE",
+  "type": "DOUBLE",
   "capacity": 2,
   "pricePerNight": 180.00
 }
@@ -422,11 +422,32 @@ Authorization: Bearer <token>
 
 ---
 
+### 14. `GET /api/hotels/{id}/rooms/{roomId}/booking(internal)`
+
+**Access:** Internal — called by ms-booking only, not exposed through the gateway.
+
+**Description:** Returns data requested belonging to a specific hotel and room for ms-booking.
+
+**Response `200 OK`:**
+```json
+{
+  "id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+  "hotelId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "hotelName" : "Barcelona Eurostars",
+  "type": "DOUBLE",
+  "description": "Spacious room with sea views.",
+  "capacity": 2,
+  "pricePerNight": 180.00
+}
+```
+
+---
+
 ## Error Format
 
-| Field | Type | Description |
-|---|---|---|
-| `code` | Integer | HTTP status code |
-| `name` | String | Short error identifier |
-| `description` | String | Human-readable error message |
-| `timestamp` | Instant | Time at which the error occurred |
+| Field         | Type    | Description                      |
+|---------------|---------|----------------------------------|
+| `code`        | Integer | HTTP status code                 |
+| `name`        | String  | Short error identifier           |
+| `description` | String  | Human-readable error message     |
+| `timestamp`   | Instant | Time at which the error occurred |

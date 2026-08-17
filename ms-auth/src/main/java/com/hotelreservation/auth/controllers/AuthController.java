@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -28,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -295,5 +297,20 @@ public class AuthController {
   @PostMapping(ApiPaths.Auth.LOGOUT)
   public void logout() {
     // Handled by Spring Security - CustomLogoutHandler
+  }
+
+  @Operation(
+      summary = "Get user details for internal services",
+      description = "Retrieves user details by their ID. Intended for inter-service communication.")
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = OpenApiConstants.Code.SUCCESS,
+            description = "Profile updated successfully",
+            content = @Content(schema = @Schema(implementation = RegisterResponse.class)))
+      })
+  @GetMapping(ApiPaths.Auth.INTERNAL_ME)
+  public ResponseEntity<UserResponse> internalMe(@PathVariable UUID userId) {
+    return ResponseEntity.ok(userService.getUserInfo(userId));
   }
 }

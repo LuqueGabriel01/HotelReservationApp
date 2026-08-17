@@ -24,4 +24,9 @@ public final class ApiPaths {
     public static final String PHOTO_BY_ID = "/{hotelId}/photos/{imageId}";
     public static final String PHOTO_BY_ID_MAIN = "/{hotelId}/photos/{imageId}/main";
   }
+
+  /** Endpoints for ms-booking. */
+  public static final class Booking {
+    public static final String ROOM_BY_ID_BOOKING = "/{hotelId}/rooms/{roomId}/booking";
+  }
 }

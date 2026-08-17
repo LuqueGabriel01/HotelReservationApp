@@ -25,6 +25,7 @@ import com.hotelreservation.auth.services.JwtService;
 import com.hotelreservation.auth.services.UserService;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -235,6 +236,26 @@ public class UserServiceImpl implements UserService {
     TokenResponse tokens = rotateTokens(savedUser);
 
     return userMapper.toRegisterResponse(savedUser, tokens);
+  }
+
+  /**
+   * Retrieves the detailed information of a user by their unique identifier.
+   *
+   * <p>This method executes within a read-only transaction context to optimize database query
+   * performance.
+   *
+   * @param id the unique identifier (UUID) of the user to look up
+   * @return a {@link UserResponse} containing the mapped user data
+   * @throws BadRequestException if no user is found with the provided ID
+   */
+  @Override
+  @Transactional(readOnly = true)
+  public UserResponse getUserInfo(UUID id) {
+    User user =
+        userRepository
+            .findById(id)
+            .orElseThrow(() -> new BadRequestException(ErrorConstants.Message.INVALID_CREDENTIALS));
+    return userMapper.toUserResponse(user);
   }
 
   private TokenResponse rotateTokens(User user) {

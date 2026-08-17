@@ -15,6 +15,7 @@ public final class ApiPaths {
     public static final String REFRESH = "/api/auth/refresh";
     public static final String LOGOUT = "/api/auth/logout";
     public static final String ME = "/api/auth/me";
+    public static final String INTERNAL_ME = "/api/auth/internal/{userId}";
   }
 
   /** API documentation endpoints. */
