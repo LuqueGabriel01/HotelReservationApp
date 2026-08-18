@@ -7,4 +7,5 @@ import lombok.Builder;
  * token.
  */
 @Builder
-public record TokenResponse(String accessToken, String refreshToken) {}
+public record TokenResponse(
+    String accessToken, String refreshToken, String tokenType, int expiresIn) {}

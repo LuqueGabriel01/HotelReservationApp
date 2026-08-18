@@ -33,6 +33,7 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -94,7 +95,7 @@ services:
       - postgres-datasource
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      AUTH_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${AUTH_DATABASE_NAME}
+      AUTH_DATABASE_URL: jdbc:postgresql://postgres-datasource:5432/${AUTH_DATABASE_NAME}
       DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
       DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
       JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
@@ -118,7 +119,7 @@ services:
       - postgres-datasource
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      CATALOG_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${CATALOG_DATABASE_NAME}
+      CATALOG_DATABASE_URL: jdbc:postgresql://postgres-datasource:5432/${CATALOG_DATABASE_NAME}
       DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
       DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
       JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
@@ -144,7 +145,7 @@ services:
       - kafka
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      BOOKING_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${BOOKING_DATABASE_NAME}
+      BOOKING_DATABASE_URL: jdbc:postgresql://postgres-datasource:5432/${BOOKING_DATABASE_NAME}
       DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
       DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
       JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
@@ -168,11 +169,12 @@ services:
       - postgres-datasource
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
-      AVAILABILITY_DATASOURCE_URL: jdbc:postgresql://postgres-datasource:5432/${AVAILABILITY_DATABASE_NAME}
+      AVAILABILITY_DATABASE_URL: jdbc:postgresql://postgres-datasource:5432/${AVAILABILITY_DATABASE_NAME}
       DATASOURCE_USERNAME: ${DATASOURCE_USERNAME}
       DATASOURCE_PASSWORD: ${DATASOURCE_PASSWORD}
       JPA_CONFIG_DDL: ${JPA_CONFIG_DDL}
       UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+      CATALOG_SERVICE_URL: ${CATALOG_SERVICE_URL}
     restart: on-failure
     networks:
       - hotel-reservation-network
@@ -203,9 +205,14 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8086:8086"
+    depends_on:
+      - redis
     environment:
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
       UI_DOCUMENTATION_ENABLE: ${UI_DOCUMENTATION_ENABLE}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
     restart: on-failure
     networks:
       - hotel-reservation-network

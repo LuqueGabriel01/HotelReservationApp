@@ -2,7 +2,6 @@ package com.hotelreservation.auth.services.impl;
 
 import com.hotelreservation.auth.config.properties.JwtProperties;
 import com.hotelreservation.auth.constants.ErrorConstants;
-import com.hotelreservation.auth.constants.SecurityConstants;
 import com.hotelreservation.auth.enums.Role;
 import com.hotelreservation.auth.enums.TokenType;
 import com.hotelreservation.auth.exceptions.BadRequestException;
@@ -12,9 +11,8 @@ import com.hotelreservation.auth.mappers.UserMapper;
 import com.hotelreservation.auth.models.dtos.request.LoginRequest;
 import com.hotelreservation.auth.models.dtos.request.RegisterRequest;
 import com.hotelreservation.auth.models.dtos.request.UpdateProfileRequest;
-import com.hotelreservation.auth.models.dtos.response.LoginResponse;
-import com.hotelreservation.auth.models.dtos.response.RefreshResponse;
 import com.hotelreservation.auth.models.dtos.response.RegisterResponse;
+import com.hotelreservation.auth.models.dtos.response.RegisterResult;
 import com.hotelreservation.auth.models.dtos.response.TokenResponse;
 import com.hotelreservation.auth.models.dtos.response.UserResponse;
 import com.hotelreservation.auth.models.entities.Token;
@@ -53,13 +51,13 @@ public class UserServiceImpl implements UserService {
    * new user entity, and issues an initial pair of access and refresh tokens.
    *
    * @param request the registration payload containing user details and credentials
-   * @return a {@link RegisterResponse} containing the created profile data and authentication
-   *     tokens
+   * @return a {@link RegisterResult} pairing the client-facing response (no refresh token) with the
+   *     raw refresh token, so the controller can set it as an {@code HttpOnly} cookie
    * @throws ConflictException if the provided email address is already registered in the system
    */
   @Override
   @Transactional
-  public RegisterResponse register(RegisterRequest request) {
+  public RegisterResult register(RegisterRequest request) {
 
     if (userRepository.existsByEmail(request.email())) {
       throw new ConflictException(ErrorConstants.Message.EMAIL_ALREADY_EXIST);
@@ -78,11 +76,18 @@ public class UserServiceImpl implements UserService {
     String accessToken = jwtService.generateJwtToken(savedUser);
     String refreshToken = jwtService.generateRefreshToken(savedUser);
 
-    TokenResponse tokens = new TokenResponse(accessToken, refreshToken);
+    TokenResponse tokens =
+        new TokenResponse(
+            accessToken,
+            refreshToken,
+            jwtProperties.getTokenPrefix(),
+            jwtProperties.getExpiration().intValue());
 
     saveUserTokens(savedUser, accessToken, refreshToken);
 
-    return userMapper.toRegisterResponse(savedUser, tokens);
+    RegisterResponse response = userMapper.toRegisterResponse(savedUser, tokens);
+
+    return new RegisterResult(response, tokens.refreshToken());
   }
 
   /**
@@ -92,13 +97,13 @@ public class UserServiceImpl implements UserService {
    * full token rotation sequence to invalidate previous sessions.
    *
    * @param request the login payload containing authentication credentials
-   * @return a {@link LoginResponse} containing the new session tokens and configurations
+   * @return a {@link TokenResponse} containing the new session tokens and configurations
    * @throws UnauthorizedException if no user account is found with the provided email
    * @throws BadRequestException if the password does not match the stored encoded password
    */
   @Override
   @Transactional
-  public LoginResponse login(LoginRequest request) {
+  public TokenResponse login(LoginRequest request) {
 
     User user =
         userRepository
@@ -109,37 +114,30 @@ public class UserServiceImpl implements UserService {
       throw new BadRequestException(ErrorConstants.Message.INVALID_CREDENTIALS);
     }
 
-    TokenResponse tokens = rotateTokens(user);
-
-    return LoginResponse.builder()
-        .accessToken(tokens.accessToken())
-        .refreshToken(tokens.refreshToken())
-        .expiresIn(jwtProperties.getExpiration().intValue())
-        .tokenType(jwtProperties.getTokenPrefix())
-        .build();
+    return rotateTokens(user);
   }
 
   /**
    * Generates a new pair of access and refresh tokens using a valid, non-expired refresh token.
    *
-   * <p>Extracts the token from the Authorization header, validates its database state and
-   * signature, and performs a token rotation if all checks pass.
+   * <p>The refresh token is read from the {@code HttpOnly} cookie by the controller and passed in
+   * as a raw value (no {@code Bearer} prefix). Its database state and signature are validated
+   * before a token rotation is performed.
    *
-   * @param authHeader the Authorization HTTP header containing the Bearer refresh token
-   * @return a {@link RefreshResponse} containing the renewed credentials
-   * @throws UnauthorizedException if the header is missing/malformed, the token is expired/revoked,
-   *     or is not explicitly classified as a refresh token
+   * @param refreshToken the raw refresh token extracted from the cookie
+   * @return a {@link TokenResponse} containing the renewed credentials
+   * @throws UnauthorizedException if the token is missing, expired, revoked, or is not explicitly
+   *     classified as a refresh token
    * @throws BadRequestException if the token subject does not map to any existing user record
    */
   @Override
   @Transactional
-  public RefreshResponse refreshToken(String authHeader) {
+  public TokenResponse refreshToken(String refreshToken) {
 
-    if (authHeader == null || !authHeader.startsWith(SecurityConstants.Field.BEARER)) {
+    if (refreshToken == null || refreshToken.isBlank()) {
       throw new UnauthorizedException(ErrorConstants.Message.INVALID_REFRESH_TOKEN);
     }
 
-    String refreshToken = authHeader.substring(7);
     String userEmail = jwtService.extractUser(refreshToken);
 
     if (userEmail == null) {
@@ -164,13 +162,7 @@ public class UserServiceImpl implements UserService {
       throw new UnauthorizedException(ErrorConstants.Message.INVALID_REFRESH_TOKEN);
     }
 
-    TokenResponse tokens = rotateTokens(user);
-
-    return new RefreshResponse(
-        tokens.accessToken(),
-        tokens.refreshToken(),
-        jwtProperties.getTokenPrefix(),
-        jwtProperties.getExpiration().intValue());
+    return rotateTokens(user);
   }
 
   /**
@@ -200,14 +192,15 @@ public class UserServiceImpl implements UserService {
    *
    * @param request the payload containing the optional fields to update
    * @param email the current email address identifying the authenticated user
-   * @return a {@link RegisterResponse} containing the updated profile and fresh security tokens
+   * @return a {@link RegisterResult} pairing the client-facing response (no refresh token) with the
+   *     raw refresh token, so the controller can set it as an {@code HttpOnly} cookie
    * @throws BadRequestException if the user record cannot be found
    * @throws ConflictException if the user attempts to update to an email already in use by another
    *     account
    */
   @Override
   @Transactional
-  public RegisterResponse updateProfile(UpdateProfileRequest request, String email) {
+  public RegisterResult updateProfile(UpdateProfileRequest request, String email) {
 
     User user =
         userRepository
@@ -235,7 +228,9 @@ public class UserServiceImpl implements UserService {
 
     TokenResponse tokens = rotateTokens(savedUser);
 
-    return userMapper.toRegisterResponse(savedUser, tokens);
+    RegisterResponse response = userMapper.toRegisterResponse(savedUser, tokens);
+
+    return new RegisterResult(response, tokens.refreshToken());
   }
 
   /**
@@ -263,7 +258,11 @@ public class UserServiceImpl implements UserService {
     String refreshToken = jwtService.generateRefreshToken(user);
     revokeAllUserToken(user);
     saveUserTokens(user, accessToken, refreshToken);
-    return new TokenResponse(accessToken, refreshToken);
+    return new TokenResponse(
+        accessToken,
+        refreshToken,
+        jwtProperties.getTokenPrefix(),
+        jwtProperties.getExpiration().intValue());
   }
 
   private void revokeAllUserToken(User user) {

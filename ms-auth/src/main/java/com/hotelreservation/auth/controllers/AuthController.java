@@ -2,6 +2,7 @@ package com.hotelreservation.auth.controllers;
 
 import com.hotelreservation.auth.constants.ApiPaths;
 import com.hotelreservation.auth.constants.OpenApiConstants;
+import com.hotelreservation.auth.constants.SecurityConstants;
 import com.hotelreservation.auth.models.dtos.request.LoginRequest;
 import com.hotelreservation.auth.models.dtos.request.RegisterRequest;
 import com.hotelreservation.auth.models.dtos.request.UpdateProfileRequest;
@@ -9,7 +10,10 @@ import com.hotelreservation.auth.models.dtos.response.ErrorResponse;
 import com.hotelreservation.auth.models.dtos.response.LoginResponse;
 import com.hotelreservation.auth.models.dtos.response.RefreshResponse;
 import com.hotelreservation.auth.models.dtos.response.RegisterResponse;
+import com.hotelreservation.auth.models.dtos.response.RegisterResult;
+import com.hotelreservation.auth.models.dtos.response.TokenResponse;
 import com.hotelreservation.auth.models.dtos.response.UserResponse;
+import com.hotelreservation.auth.security.cookie.RefreshTokenCookieFactory;
 import com.hotelreservation.auth.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -19,6 +23,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +33,12 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Controller for authentication requests. */
@@ -47,7 +52,9 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
   private final UserService userService;
+  private final RefreshTokenCookieFactory tokenCookieFactory;
 
+  /** register with cookie. */
   @Operation(
       summary = "Create a new account",
       description =
@@ -55,8 +62,8 @@ public class AuthController {
                     Registers a new account in the platform using a unique username,
                     email address, and password. Once the registration process is
                     completed successfully, the service returns the newly created
-                    user information together with the authentication tokens
-                    required to access protected resources.
+                    user information together with an access token; the refresh token
+                    is set as an HttpOnly cookie.
                     """)
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       description = "Information required to create a new account.",
@@ -96,10 +103,15 @@ public class AuthController {
                 schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping(ApiPaths.Auth.REGISTER)
-  public ResponseEntity<RegisterResponse> register(@RequestBody @Valid RegisterRequest request) {
-    return ResponseEntity.status(HttpStatus.CREATED).body(userService.register(request));
+  public ResponseEntity<RegisterResponse> register(
+      @RequestBody @Valid RegisterRequest request, HttpServletResponse response) {
+    RegisterResult result = userService.register(request);
+    response.addHeader(
+        HttpHeaders.SET_COOKIE, tokenCookieFactory.create(result.refreshToken()).toString());
+    return ResponseEntity.status(HttpStatus.CREATED).body(result.response());
   }
 
+  /** login with cookie. */
   @Operation(
       summary = "Sign in",
       description =
@@ -146,16 +158,27 @@ public class AuthController {
                 schema = @Schema(implementation = ErrorResponse.class)))
   })
   @PostMapping(ApiPaths.Auth.LOGIN)
-  public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-    return ResponseEntity.status(HttpStatus.OK).body(userService.login(request));
+  public ResponseEntity<LoginResponse> login(
+      @RequestBody @Valid LoginRequest request, HttpServletResponse response) {
+    TokenResponse tokens = userService.login(request);
+    response.addHeader(
+        HttpHeaders.SET_COOKIE, tokenCookieFactory.create(tokens.refreshToken()).toString());
+    LoginResponse loginCookie =
+        LoginResponse.builder()
+            .accessToken(tokens.accessToken())
+            .tokenType(tokens.tokenType())
+            .expiresIn(tokens.expiresIn())
+            .build();
+    return ResponseEntity.status(HttpStatus.OK).body(loginCookie);
   }
 
+  /** refresh token with cookie. */
   @Operation(
       summary = "Refresh token endpoint",
       description =
-          "Issues a new access token using a valid refresh token, "
-              + "without requiring the user to log in again.",
-      security = @SecurityRequirement(name = OpenApiConstants.BEARER_AUTH))
+          "Issues a new access token using a valid refresh token read from the HttpOnly "
+              + "cookie, without requiring the user to log in again. The response renews the "
+              + "cookie with the newly issued refresh token.")
   @ApiResponses(
       value = {
         @ApiResponse(
@@ -167,7 +190,7 @@ public class AuthController {
                     schema = @Schema(implementation = RefreshResponse.class))),
         @ApiResponse(
             responseCode = OpenApiConstants.Code.UNAUTHORIZED,
-            description = "Invalid or expired refresh token",
+            description = "Missing, invalid, or expired refresh token cookie",
             content =
                 @Content(
                     mediaType = MediaType.APPLICATION_JSON_VALUE,
@@ -182,10 +205,23 @@ public class AuthController {
       })
   @PostMapping(ApiPaths.Auth.REFRESH)
   public ResponseEntity<RefreshResponse> refreshToken(
-      @RequestHeader(HttpHeaders.AUTHORIZATION) String authHeader) {
-    return ResponseEntity.status(HttpStatus.OK).body(userService.refreshToken(authHeader));
+      @CookieValue(value = SecurityConstants.Field.REFRESH_TOKEN_COOKIE, required = false)
+          String refreshToken,
+      HttpServletResponse response) {
+    TokenResponse tokens = userService.refreshToken(refreshToken);
+    response.addHeader(
+        HttpHeaders.SET_COOKIE, tokenCookieFactory.create(tokens.refreshToken()).toString());
+
+    RefreshResponse body =
+        RefreshResponse.builder()
+            .accessToken(tokens.accessToken())
+            .tokenType(tokens.tokenType())
+            .expiresIn(tokens.expiresIn())
+            .build();
+    return ResponseEntity.status(HttpStatus.OK).body(body);
   }
 
+  /** profile. */
   @Operation(
       summary = "Get current user profile",
       description =
@@ -220,9 +256,13 @@ public class AuthController {
         .body(userService.getProfile(userDetails.getUsername()));
   }
 
+  /** profile with cookie. */
   @Operation(
       summary = "Update current user profile",
-      description = "Updates the profile information of the currently authenticated user.",
+      description =
+          "Updates the profile information of the currently authenticated user. Any "
+              + "modification rotates the session tokens; the new refresh token is set as an "
+              + "HttpOnly cookie.",
       security = @SecurityRequirement(name = OpenApiConstants.BEARER_AUTH))
   @io.swagger.v3.oas.annotations.parameters.RequestBody(
       description = "Updated profile",
@@ -266,9 +306,12 @@ public class AuthController {
   @PutMapping(ApiPaths.Auth.ME)
   public ResponseEntity<RegisterResponse> me(
       @RequestBody @Valid UpdateProfileRequest request,
-      @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails) {
-    return ResponseEntity.status(HttpStatus.OK)
-        .body(userService.updateProfile(request, userDetails.getUsername()));
+      @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails,
+      HttpServletResponse response) {
+    RegisterResult result = userService.updateProfile(request, userDetails.getUsername());
+    response.addHeader(
+        HttpHeaders.SET_COOKIE, tokenCookieFactory.create(result.refreshToken()).toString());
+    return ResponseEntity.status(HttpStatus.OK).body(result.response());
   }
 
   @Operation(
