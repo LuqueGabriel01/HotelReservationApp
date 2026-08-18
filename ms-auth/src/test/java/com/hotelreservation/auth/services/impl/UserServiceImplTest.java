@@ -14,9 +14,9 @@ import com.hotelreservation.auth.mappers.UserMapper;
 import com.hotelreservation.auth.models.dtos.request.LoginRequest;
 import com.hotelreservation.auth.models.dtos.request.RegisterRequest;
 import com.hotelreservation.auth.models.dtos.request.UpdateProfileRequest;
-import com.hotelreservation.auth.models.dtos.response.LoginResponse;
-import com.hotelreservation.auth.models.dtos.response.RefreshResponse;
+import com.hotelreservation.auth.models.dtos.response.AccessTokenResponse;
 import com.hotelreservation.auth.models.dtos.response.RegisterResponse;
+import com.hotelreservation.auth.models.dtos.response.RegisterResult;
 import com.hotelreservation.auth.models.dtos.response.TokenResponse;
 import com.hotelreservation.auth.models.entities.Token;
 import com.hotelreservation.auth.models.entities.User;
@@ -76,7 +76,12 @@ class UserServiceImplTest {
       String dummyAccess = "access_token_mock";
       String dummyRefresh = "refresh_token_mock";
 
-      TokenResponse expectedTokens = new TokenResponse(dummyAccess, dummyRefresh);
+      AccessTokenResponse expectedTokens =
+          AccessTokenResponse.builder()
+              .accessToken(dummyAccess)
+              .tokenType("Bearer")
+              .expiresIn(3600)
+              .build();
 
       RegisterResponse response =
           RegisterResponse.builder()
@@ -95,16 +100,18 @@ class UserServiceImplTest {
       Mockito.when(userRepository.save(Mockito.any(User.class))).thenReturn(user);
       Mockito.when(jwtService.generateJwtToken(user)).thenReturn("access_token_mock");
       Mockito.when(jwtService.generateRefreshToken(user)).thenReturn("refresh_token_mock");
+      Mockito.when(jwtProperties.getExpiration()).thenReturn(3600L);
       Mockito.when(
               userMapper.toRegisterResponse(Mockito.eq(user), Mockito.any(TokenResponse.class)))
           .thenReturn(response);
 
-      RegisterResponse actualResponse = userServiceImpl.register(request);
+      RegisterResult result = userServiceImpl.register(request);
+      RegisterResponse actualResponse = result.response();
 
       assertThat(actualResponse).isNotNull();
       assertThat(actualResponse.email()).isEqualTo(request.email());
       assertThat(actualResponse.tokens().accessToken()).isEqualTo(dummyAccess);
-      assertThat(actualResponse.tokens().refreshToken()).isEqualTo(dummyRefresh);
+      assertThat(result.refreshToken()).isEqualTo(dummyRefresh);
 
       Mockito.verify(passwordEncoder, Mockito.times(1)).encode(request.password());
       Mockito.verify(userRepository, Mockito.times(1)).save(Mockito.any(User.class));
@@ -147,7 +154,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    @DisplayName("should return LoginResponse successfully when credentials are valid")
+    @DisplayName("should return TokenResponse successfully when credentials are valid")
     void shouldReturnUserWhenIsValid() {
 
       String dummyAccess = "access_token_mock";
@@ -165,7 +172,7 @@ class UserServiceImplTest {
 
       Mockito.when(jwtProperties.getExpiration()).thenReturn(3600L);
 
-      LoginResponse response = userServiceImpl.login(request);
+      TokenResponse response = userServiceImpl.login(request);
 
       assertThat(response).isNotNull();
       assertThat(response.accessToken()).isEqualTo(dummyAccess);
@@ -183,17 +190,15 @@ class UserServiceImplTest {
   class RefreshToken {
 
     @Test
-    @DisplayName("should throw UnauthorizedException when header is null")
-    void shouldThrowUnauthorizedExceptionWhenHeaderIsNull() {
+    @DisplayName("should throw UnauthorizedException when token is null")
+    void shouldThrowUnauthorizedExceptionWhenTokenIsNull() {
       assertThrows(UnauthorizedException.class, () -> userServiceImpl.refreshToken(null));
     }
 
     @Test
-    @DisplayName("should throw UnauthorizedException when header does not start with Bearer")
-    void shouldThrowUnauthorizedExceptionWhenHeaderHasNoBearerPrefix() {
-      assertThrows(
-          UnauthorizedException.class,
-          () -> userServiceImpl.refreshToken("InvalidPrefix token.value"));
+    @DisplayName("should throw UnauthorizedException when token is blank")
+    void shouldThrowUnauthorizedExceptionWhenTokenIsBlank() {
+      assertThrows(UnauthorizedException.class, () -> userServiceImpl.refreshToken("   "));
     }
 
     @Test
@@ -205,8 +210,7 @@ class UserServiceImplTest {
       Mockito.when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
       Mockito.when(tokenRepository.findByToken("refresh.token")).thenReturn(Optional.empty());
 
-      assertThrows(
-          BadRequestException.class, () -> userServiceImpl.refreshToken("Bearer refresh.token"));
+      assertThrows(BadRequestException.class, () -> userServiceImpl.refreshToken("refresh.token"));
     }
 
     @Test
@@ -222,7 +226,7 @@ class UserServiceImplTest {
           .thenReturn(Optional.of(bearerToken));
 
       assertThrows(
-          UnauthorizedException.class, () -> userServiceImpl.refreshToken("Bearer refresh.token"));
+          UnauthorizedException.class, () -> userServiceImpl.refreshToken("refresh.token"));
     }
 
     @Test
@@ -238,12 +242,12 @@ class UserServiceImplTest {
           .thenReturn(Optional.of(revokedToken));
 
       assertThrows(
-          UnauthorizedException.class, () -> userServiceImpl.refreshToken("Bearer refresh.token"));
+          UnauthorizedException.class, () -> userServiceImpl.refreshToken("refresh.token"));
     }
 
     @Test
-    @DisplayName("should return RefreshResponse when token is valid")
-    void shouldReturnRefreshResponseWhenTokenIsValid() {
+    @DisplayName("should return TokenResponse when token is valid")
+    void shouldReturnTokenResponseWhenTokenIsValid() {
       String dummyAccess = "new_access_token";
       String dummyRefresh = "new_refresh_token";
 
@@ -259,8 +263,7 @@ class UserServiceImplTest {
       Mockito.when(jwtService.generateRefreshToken(user)).thenReturn(dummyRefresh);
       Mockito.when(jwtProperties.getExpiration()).thenReturn(3600L);
 
-      RefreshResponse response =
-          userServiceImpl.refreshToken("Bearer " + TokenFixture.DEFAULT_REFRESH_TOKEN);
+      TokenResponse response = userServiceImpl.refreshToken(TokenFixture.DEFAULT_REFRESH_TOKEN);
 
       assertThat(response).isNotNull();
       assertThat(response.accessToken()).isEqualTo(dummyAccess);
@@ -300,7 +303,12 @@ class UserServiceImplTest {
 
       String dummyAccess = "access_token_mock";
       String dummyRefresh = "refresh_token_mock";
-      TokenResponse expectedTokens = new TokenResponse(dummyAccess, dummyRefresh);
+      AccessTokenResponse expectedTokens =
+          AccessTokenResponse.builder()
+              .accessToken(dummyAccess)
+              .tokenType("Bearer")
+              .expiresIn(3600)
+              .build();
 
       RegisterResponse expectedResponse =
           RegisterResponse.builder()
@@ -315,14 +323,17 @@ class UserServiceImplTest {
       Mockito.when(userRepository.save(user)).thenReturn(user);
       Mockito.when(jwtService.generateJwtToken(user)).thenReturn(dummyAccess);
       Mockito.when(jwtService.generateRefreshToken(user)).thenReturn(dummyRefresh);
+      Mockito.when(jwtProperties.getExpiration()).thenReturn(3600L);
       Mockito.when(
               userMapper.toRegisterResponse(Mockito.eq(user), Mockito.any(TokenResponse.class)))
           .thenReturn(expectedResponse);
 
-      RegisterResponse response = userServiceImpl.updateProfile(request, user.getEmail());
+      RegisterResult result = userServiceImpl.updateProfile(request, user.getEmail());
+      RegisterResponse response = result.response();
 
       assertThat(response.username()).isEqualTo("new_username");
       assertThat(response.email()).isEqualTo(user.getEmail());
+      assertThat(result.refreshToken()).isEqualTo(dummyRefresh);
 
       Mockito.verify(passwordEncoder, Mockito.never()).encode(Mockito.any());
     }
@@ -335,7 +346,12 @@ class UserServiceImplTest {
 
       String dummyAccess = "access_token_mock";
       String dummyRefresh = "refresh_token_mock";
-      TokenResponse expectedTokens = new TokenResponse(dummyAccess, dummyRefresh);
+      AccessTokenResponse expectedTokens =
+          AccessTokenResponse.builder()
+              .accessToken(dummyAccess)
+              .tokenType("Bearer")
+              .expiresIn(3600)
+              .build();
 
       RegisterResponse expectedResponse =
           RegisterResponse.builder()
@@ -353,13 +369,15 @@ class UserServiceImplTest {
       Mockito.when(userRepository.save(user)).thenReturn(user);
       Mockito.when(jwtService.generateJwtToken(user)).thenReturn(dummyAccess);
       Mockito.when(jwtService.generateRefreshToken(user)).thenReturn(dummyRefresh);
+      Mockito.when(jwtProperties.getExpiration()).thenReturn(3600L);
       Mockito.when(
               userMapper.toRegisterResponse(Mockito.eq(user), Mockito.any(TokenResponse.class)))
           .thenReturn(expectedResponse);
 
-      RegisterResponse response = userServiceImpl.updateProfile(request, user.getEmail());
+      RegisterResult result = userServiceImpl.updateProfile(request, user.getEmail());
 
-      assertThat(response).isNotNull();
+      assertThat(result.response()).isNotNull();
+      assertThat(result.refreshToken()).isEqualTo(dummyRefresh);
 
       Mockito.verify(passwordEncoder).encode("NewPassword@123");
       Mockito.verify(tokenRepository)
