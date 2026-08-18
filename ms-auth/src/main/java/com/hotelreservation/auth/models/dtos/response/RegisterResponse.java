@@ -10,4 +10,9 @@ import lombok.Builder;
  */
 @Builder
 public record RegisterResponse(
-    UUID id, String username, String email, Role role, TokenResponse tokens, Instant createdAt) {}
+    UUID id,
+    String username,
+    String email,
+    Role role,
+    AccessTokenResponse tokens,
+    Instant createdAt) {}

@@ -12,5 +12,6 @@ public final class SecurityConstants {
     public static final String USERNAME = "username";
     public static final String ROLE = "role";
     public static final String BEARER = "Bearer ";
+    public static final String REFRESH_TOKEN_COOKIE = "refreshToken";
   }
 }
