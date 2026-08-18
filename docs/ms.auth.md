@@ -45,6 +45,25 @@ UserRole: ROLE_USER, ROLE_ADMIN
 
 > This is the only table in `auth_db`. No foreign keys — it is a fully independent database.
 
+> **Token invalidation** (logout, revocation, rotation) is handled entirely through this `tokens` table in PostgreSQL — every access and refresh token issued is persisted here, and revoking a session means flipping `revoked`/`expired` on the matching rows. There is no Redis (or any other cache/store) involved in `ms-auth`'s token lifecycle; Redis is only used elsewhere in the platform (e.g. rate limiting in `ms-gateway`).
+
+---
+
+## Refresh token cookie
+
+Since the refresh token flow moved off the request/response body, every endpoint that issues or clears a refresh token (`/login`, `/register`, `/refresh`, `/me` (`PUT`), `/logout`) sets it as a `Set-Cookie` header with the following attributes:
+
+| Attribute  | Value | Notes |
+|---|---|---|
+| Name | `refreshToken` | |
+| `HttpOnly` | `true` | Not readable from JavaScript — mitigates token theft via XSS. |
+| `Secure` | `true` | Only sent over HTTPS. |
+| `SameSite` | `Lax` | Not sent on cross-site `POST`s (e.g. classic CSRF forms), but still sent on top-level navigations. |
+| `Path` | `/api/auth` | Scoped to the auth routes only — never sent to other services. |
+| `Max-Age` | `JWT_REFRESH_EXPIRATION` (seconds) | Matches the refresh token's own JWT expiration. `0` when the cookie is being cleared (logout). |
+
+The browser (or API client) is expected to store this cookie and send it back automatically on subsequent requests to `/api/auth/**` — no manual handling is required, and the refresh token is never exposed to application JavaScript or included in any JSON response body.
+
 ---
 
 ## Endpoints
@@ -53,7 +72,7 @@ UserRole: ROLE_USER, ROLE_ADMIN
 
 **Access:** Public
 
-**Description:** Registers a new user in the system.
+**Description:** Registers a new user in the system. Returns an access token in the body and sets the refresh token as an `HttpOnly` cookie.
 
 **Request Body:**
 ```json
@@ -77,12 +96,15 @@ UserRole: ROLE_USER, ROLE_ADMIN
   "email": "johndoe@email.com",
   "tokens": {
     "accessToken": "eyJheGtiOiJqUzUxMiJ9...",
-    "refreshToken": "eyJrqGfiOiJIwzUxMiJ9..."
+    "tokenType": "Bearer",
+    "expiresIn": 3600
   },
   "role": "ROLE_USER",
   "createdAt": "2025-01-15T10:30:00Z"
 }
 ```
+
+**Response headers:** includes `Set-Cookie` with the refresh token (see [Refresh token cookie](#refresh-token-cookie)).
 
 **Response `409 Conflict`** — when the email or username is already taken:
 ```json
@@ -110,7 +132,7 @@ UserRole: ROLE_USER, ROLE_ADMIN
 
 **Access:** Public
 
-**Description:** Authenticates a user and returns a JWT access token along with a refresh token.
+**Description:** Authenticates a user and returns a JWT access token in the body. The refresh token is set as an `HttpOnly` cookie, not included in the response body.
 
 **Request Body:**
 ```json
@@ -124,11 +146,12 @@ UserRole: ROLE_USER, ROLE_ADMIN
 ```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4...",
   "tokenType": "Bearer",
   "expiresIn": 3600
 }
 ```
+
+**Response headers:** includes `Set-Cookie` with the refresh token (see [Refresh token cookie](#refresh-token-cookie)).
 
 **Response `401 Unauthorized`** — when credentials are invalid:
 ```json
@@ -146,16 +169,18 @@ UserRole: ROLE_USER, ROLE_ADMIN
 
 **Access:** Authenticated users
 
-**Description:** Invalidates the current session by blacklisting the JWT token.
+**Description:** Revokes all active tokens for the user in PostgreSQL and expires the refresh token cookie.
 
 **Headers:**
 ```
-Authorization: Bearer <token>
+Authorization: Bearer <accessToken>
 ```
 
 **Response `204 No Content`**
 
-**Response `401 Unauthorized`** — when no valid token is provided:
+**Response headers:** includes `Set-Cookie` with the same `refreshToken` cookie, `Max-Age=0`, so the client discards it. This is set unconditionally, even if the access token turns out to be missing or invalid, so a logout call always leaves the client without a usable refresh token.
+
+**Response `401 Unauthorized`** — when no valid access token is provided:
 ```json
 {
   "code": 401,
@@ -169,28 +194,24 @@ Authorization: Bearer <token>
 
 ### 4. `POST /api/auth/refresh`
 
-**Access:** Public (requires a valid refresh token)
+**Access:** Public (requires a valid refresh token cookie)
 
-**Description:** Issues a new access token using a valid refresh token, without requiring the user to log in again.
+**Description:** Issues a new access token using the refresh token stored in the `HttpOnly` cookie, without requiring the user to log in again. As the refresh token is rotated on every call, the response renews the cookie with the newly issued refresh token.
 
-**Request Body:**
-```json
-{
-  "refreshToken": "dGhpcyBpcyBhIHJlZnJlc2ggdG9rZW4..."
-}
-```
+**Request:** no body, no `Authorization` header — the refresh token is read exclusively from the `refreshToken` cookie sent automatically by the client.
 
 **Response `200 OK`:**
 ```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
   "tokenType": "Bearer",
   "expiresIn": 3600
 }
 ```
 
-**Response `401 Unauthorized`** — when the refresh token is expired or invalid:
+**Response headers:** includes a renewed `Set-Cookie` with the newly rotated refresh token (see [Refresh token cookie](#refresh-token-cookie)).
+
+**Response `401 Unauthorized`** — when the refresh token cookie is missing, expired, revoked, or invalid:
 ```json
 {
   "code": 401,
@@ -241,7 +262,7 @@ Authorization: Bearer <token>
 
 **Access:** Authenticated users
 
-**Description:** Updates the profile information of the currently authenticated user. All fields are optional; only the provided fields will be updated.
+**Description:** Updates the profile information of the currently authenticated user. All fields are optional; only the provided fields will be updated. Any modification rotates the session tokens — the new access token is returned in the body and the new refresh token is set as an `HttpOnly` cookie.
 
 **Headers:**
 ```
@@ -270,11 +291,14 @@ Authorization: Bearer <token>
   "role": "ROLE_USER",
   "tokens": {
     "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "tokenType": "Bearer",
+    "expiresIn": 3600
   },
   "updatedAt": "2025-01-16T09:00:00Z"
 }
 ```
+
+**Response headers:** includes a renewed `Set-Cookie` with the newly rotated refresh token (see [Refresh token cookie](#refresh-token-cookie)).
 
 **Response `409 Conflict`** — when the new email or username is already taken:
 ```json
@@ -306,9 +330,11 @@ All error responses follow a consistent structure across the service:
 | Property | Value |
 |---|---|
 | Algorithm | HS256 |
-| Access token expiry | 1 hour |
-| Refresh token expiry | 7 days |
+| Access token expiry | 1 hour (`JWT_EXPIRATION`, seconds) |
+| Refresh token expiry | 7 days (`JWT_REFRESH_EXPIRATION`, seconds) — also used as the refresh cookie's `Max-Age` |
 | Token type | Bearer |
+| Access token transport | `Authorization: Bearer <token>` header |
+| Refresh token transport | `refreshToken` `HttpOnly` cookie (see [Refresh token cookie](#refresh-token-cookie)) — never in a request/response body |
 
 The JWT payload includes the following claims:
 
