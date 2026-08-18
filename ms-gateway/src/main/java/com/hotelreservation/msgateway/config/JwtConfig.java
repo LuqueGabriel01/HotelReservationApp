@@ -32,7 +32,7 @@ public class JwtConfig {
    */
   @Bean
   public SecretKey signingKey() {
-    byte[] keyBytes = Decoders.BASE64URL.decode(jwt.secret());
+    byte[] keyBytes = Decoders.BASE64.decode(jwt.secret());
     return Keys.hmacShaKeyFor(keyBytes);
   }
 }
