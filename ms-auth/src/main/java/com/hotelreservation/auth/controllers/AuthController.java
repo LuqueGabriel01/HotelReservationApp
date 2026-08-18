@@ -54,6 +54,7 @@ public class AuthController {
   private final UserService userService;
   private final RefreshTokenCookieFactory tokenCookieFactory;
 
+  /** register with cookie. */
   @Operation(
       summary = "Create a new account",
       description =
@@ -110,7 +111,7 @@ public class AuthController {
     return ResponseEntity.status(HttpStatus.CREATED).body(result.response());
   }
 
-  /** login with cookie.*/
+  /** login with cookie. */
   @Operation(
       summary = "Sign in",
       description =
@@ -171,6 +172,7 @@ public class AuthController {
     return ResponseEntity.status(HttpStatus.OK).body(loginCookie);
   }
 
+  /** refresh token with cookie. */
   @Operation(
       summary = "Refresh token endpoint",
       description =
@@ -219,6 +221,7 @@ public class AuthController {
     return ResponseEntity.status(HttpStatus.OK).body(body);
   }
 
+  /** profile. */
   @Operation(
       summary = "Get current user profile",
       description =
@@ -253,6 +256,7 @@ public class AuthController {
         .body(userService.getProfile(userDetails.getUsername()));
   }
 
+  /** profile with cookie. */
   @Operation(
       summary = "Update current user profile",
       description =

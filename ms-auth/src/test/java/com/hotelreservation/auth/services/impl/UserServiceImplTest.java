@@ -210,8 +210,7 @@ class UserServiceImplTest {
       Mockito.when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
       Mockito.when(tokenRepository.findByToken("refresh.token")).thenReturn(Optional.empty());
 
-      assertThrows(
-          BadRequestException.class, () -> userServiceImpl.refreshToken("refresh.token"));
+      assertThrows(BadRequestException.class, () -> userServiceImpl.refreshToken("refresh.token"));
     }
 
     @Test

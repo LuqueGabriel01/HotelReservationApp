@@ -51,8 +51,8 @@ public class UserServiceImpl implements UserService {
    * new user entity, and issues an initial pair of access and refresh tokens.
    *
    * @param request the registration payload containing user details and credentials
-   * @return a {@link RegisterResult} pairing the client-facing response (no refresh token) with
-   *     the raw refresh token, so the controller can set it as an {@code HttpOnly} cookie
+   * @return a {@link RegisterResult} pairing the client-facing response (no refresh token) with the
+   *     raw refresh token, so the controller can set it as an {@code HttpOnly} cookie
    * @throws ConflictException if the provided email address is already registered in the system
    */
   @Override
@@ -192,8 +192,8 @@ public class UserServiceImpl implements UserService {
    *
    * @param request the payload containing the optional fields to update
    * @param email the current email address identifying the authenticated user
-   * @return a {@link RegisterResult} pairing the client-facing response (no refresh token) with
-   *     the raw refresh token, so the controller can set it as an {@code HttpOnly} cookie
+   * @return a {@link RegisterResult} pairing the client-facing response (no refresh token) with the
+   *     raw refresh token, so the controller can set it as an {@code HttpOnly} cookie
    * @throws BadRequestException if the user record cannot be found
    * @throws ConflictException if the user attempts to update to an email already in use by another
    *     account

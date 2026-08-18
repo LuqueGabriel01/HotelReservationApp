@@ -14,8 +14,8 @@ import org.springframework.stereotype.Component;
  *
  * <p>Login, refresh, and logout must all set/clear this cookie using the exact same attributes
  * ({@code Path}, {@code SameSite}, {@code Secure}). Centralizing the construction here guarantees
- * that consistency, since a mismatch in any attribute would prevent the browser from overwriting
- * or deleting a previously set cookie.
+ * that consistency, since a mismatch in any attribute would prevent the browser from overwriting or
+ * deleting a previously set cookie.
  */
 @Component
 @RequiredArgsConstructor
