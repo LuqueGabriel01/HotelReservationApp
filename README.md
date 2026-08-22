@@ -9,7 +9,7 @@ Backend: Java 21, Spring Boot 4.0.6, Spring Security + JWT. Each service owns it
 | Service | Port | Responsibility |
 |---|---|---|
 | [ms-gateway](./docs/ms-gateway.md) | 8080 | Single entry point: JWT validation, routing, rate limiting |
-| [ms-auth](./docs/ms.auth.md) | 8081 | Registration, login, JWT issuance and refresh |
+| [ms-auth](docs/ms-auth.md) | 8081 | Registration, login, JWT issuance and refresh |
 | [ms-catalog](./docs/ms-catalog.md) | 8082 | Hotels, rooms and photos (Cloudinary) |
 | [ms-booking](./docs/ms-booking.md) | 8083 | Booking lifecycle |
 | [ms-availability](./docs/ms-availability.md) | 8084 | Room availability and locking |
@@ -181,4 +181,4 @@ HotelReservationApp/
 
 Full endpoint reference, database schema and implementation notes for each service live in `docs/`:
 
-[ms-gateway](./docs/ms-gateway.md) · [ms-auth](./docs/ms.auth.md) · [ms-catalog](./docs/ms-catalog.md) · [ms-booking](./docs/ms-booking.md) · [ms-availability](./docs/ms-availability.md) · [ms-notification](./docs/ms-notification.md) · [ms-agent](./docs/ms-agent.md)
+[ms-gateway](./docs/ms-gateway.md) · [ms-auth](docs/ms-auth.md) · [ms-catalog](./docs/ms-catalog.md) · [ms-booking](./docs/ms-booking.md) · [ms-availability](./docs/ms-availability.md) · [ms-notification](./docs/ms-notification.md) · [ms-agent](./docs/ms-agent.md)
