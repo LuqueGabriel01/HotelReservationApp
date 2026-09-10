@@ -22,12 +22,17 @@ import com.hotelreservation.catalog.models.dto.response.hotel.UpdateHotelRespons
 import com.hotelreservation.catalog.models.entities.Amenity;
 import com.hotelreservation.catalog.models.entities.Hotel;
 import com.hotelreservation.catalog.repositories.AmenityRepository;
+import com.hotelreservation.catalog.repositories.HotelMinPriceProjection;
 import com.hotelreservation.catalog.repositories.HotelRepository;
+import com.hotelreservation.catalog.repositories.RoomRepository;
 import com.hotelreservation.catalog.specifications.HotelSpecification;
 import jakarta.transaction.Transactional;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -43,6 +48,7 @@ import org.springframework.web.server.ResponseStatusException;
 public class HotelService {
 
   private final HotelRepository hotelRepository;
+  private final RoomRepository roomRepository;
   private final AmenityRepository amenityRepository;
   private final HotelMapper hotelMapper;
   private final Cloudinary cloudinary;
@@ -57,7 +63,7 @@ public class HotelService {
    * @throws InvalidPaginationException If page or size parameters are invalid
    * @throws InvalidFilterException If filter criteria are malformed
    */
-  @Cacheable(value = HOTEL_LIST_CACHE, key = "'all'")
+  @Cacheable(value = HOTEL_LIST_CACHE)
   public PageResponseDto<HotelSummaryResponseDto> findAllHotels(
       HotelFilterRequest filter, int page, int size) {
 
@@ -85,8 +91,12 @@ public class HotelService {
 
     Page<Hotel> hotels = hotelRepository.findAll(spec, pageable);
 
+    Map<UUID, BigDecimal> minPriceByHotelId = findMinPricePerNightByHotelIds(hotels.getContent());
+
     List<HotelSummaryResponseDto> content =
-        hotels.getContent().stream().map(hotelMapper::toSummaryDto).toList();
+        hotels.getContent().stream()
+            .map(hotel -> hotelMapper.toSummaryDto(hotel, minPriceByHotelId.get(hotel.getId())))
+            .toList();
 
     return new PageResponseDto<>(
         content,
@@ -94,6 +104,26 @@ public class HotelService {
         hotels.getSize(),
         hotels.getTotalElements(),
         hotels.getTotalPages());
+  }
+
+  /**
+   * Resolves the cheapest room price per night for each of the given hotels in a single batched
+   * query, instead of lazily loading every hotel's room collection one by one.
+   *
+   * @param hotels The hotels to resolve prices for
+   * @return A map from hotel id to its cheapest room price. Hotels with no rooms are absent.
+   */
+  private Map<UUID, BigDecimal> findMinPricePerNightByHotelIds(List<Hotel> hotels) {
+    List<UUID> hotelIds = hotels.stream().map(Hotel::getId).toList();
+
+    if (hotelIds.isEmpty()) {
+      return Map.of();
+    }
+
+    return roomRepository.findMinPricePerNightByHotelIds(hotelIds).stream()
+        .collect(
+            Collectors.toMap(
+                HotelMinPriceProjection::getHotelId, HotelMinPriceProjection::getMinPrice));
   }
 
   /**
