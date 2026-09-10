@@ -1,5 +1,6 @@
 package com.hotelreservation.catalog.models.dto.response.hotel;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,4 +16,5 @@ public record HotelSummaryResponseDto(
     String city,
     int stars,
     String mainImage,
-    List<String> amenities) {}
+    List<String> amenities,
+    BigDecimal minPrice) {}
