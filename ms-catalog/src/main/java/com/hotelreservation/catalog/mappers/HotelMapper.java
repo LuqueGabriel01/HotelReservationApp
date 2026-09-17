@@ -8,6 +8,7 @@ import com.hotelreservation.catalog.models.dto.response.image.ImageHotelResponse
 import com.hotelreservation.catalog.models.entities.Amenity;
 import com.hotelreservation.catalog.models.entities.Hotel;
 import com.hotelreservation.catalog.models.entities.ImageHotel;
+import java.math.BigDecimal;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -18,14 +19,17 @@ public interface HotelMapper {
 
   /**
    * Maps a Hotel entity to a simplified summary response DTO. Extracts the main image and amenity
-   * names using custom helper methods.
+   * names using custom helper methods, and takes the hotel's cheapest room price already resolved
+   * by the caller (avoids lazy-loading every hotel's rooms one by one).
    *
    * @param hotel The source Hotel entity
+   * @param minPrice The hotel's cheapest room price per night, or {@code null} if it has no rooms
    * @return The populated HotelSummaryResponseDto
    */
   @Mapping(target = "mainImage", expression = "java(getMainImage(hotel))")
   @Mapping(target = "amenities", expression = "java(getAmenityNames(hotel))")
-  HotelSummaryResponseDto toSummaryDto(Hotel hotel);
+  @Mapping(target = "minPrice", source = "minPrice")
+  HotelSummaryResponseDto toSummaryDto(Hotel hotel, BigDecimal minPrice);
 
   /**
    * Maps a Hotel entity to a full detailed response DTO. Resolves all associated images and amenity

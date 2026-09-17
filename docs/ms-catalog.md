@@ -102,7 +102,8 @@ RoomType: SIMPLE, DOBLE, SUITE
       "city": "Barcelona",
       "stars": 5,
       "mainImage": "https://res.cloudinary.com/demo/image/upload/hotel1.jpg",
-      "amenities": ["wifi", "pool", "parking"]
+      "amenities": ["wifi", "pool", "parking"],
+      "minPrice": 150.00
     }
   ],
   "page": 0,
@@ -111,6 +112,8 @@ RoomType: SIMPLE, DOBLE, SUITE
   "totalPages": 1
 }
 ```
+
+> `minPrice` is the price per night of the hotel's cheapest room (computed on the fly from the `rooms` table, not a stored column). It is `null` when the hotel has no rooms yet.
 
 ---
 
